@@ -2,32 +2,25 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { Project, Profile } from '../types';
+import { GoogleGenAI } from '@google/genai';
 import { 
   Briefcase, 
   Clock, 
   Users, 
   Search, 
-  MessageSquare, 
   DollarSign, 
   Eye,
   CheckCircle,
-  RotateCcw,
-  UserPlus,
-  UserMinus,
-  Paperclip,
-  Download,
   Upload,
   X,
   Loader2,
   History,
   ClipboardList,
-  RefreshCw,
   User as UserIcon,
   Sparkles,
   FileText,
-  Tag,
-  ShieldAlert,
-  AlertTriangle
+  AlertTriangle,
+  Wand2
 } from 'lucide-react';
 import { AttachmentGrid } from './AIServices';
 
@@ -43,6 +36,7 @@ const AdminOverview: React.FC = () => {
   const [adminResponse, setAdminResponse] = useState('');
   const [tempAttachments, setTempAttachments] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -55,6 +49,44 @@ const AdminOverview: React.FC = () => {
     setProjects(proj || []);
     setCustomers(cust || []);
     setLoading(false);
+  };
+
+  const generateAiDraft = async () => {
+    if (!selectedProject) return;
+    setIsAiGenerating(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const prompt = `
+        You are an expert AI consultant and project manager for "Nexus AI Hub".
+        A client has requested a project in the category: ${selectedProject.category}.
+        Project Name: ${selectedProject.project_name || 'N/A'}
+        Client Brief: ${selectedProject.description}
+        
+        Please draft a professional, high-end, and comprehensive response or technical solution. 
+        - If it's "AI Services" (apparel/design), describe the creative direction and AI tools used.
+        - If it's "Websites & Apps", provide a technical architecture overview.
+        - If it's "Automations", describe the logic flow and efficiency gains.
+        
+        Format the response in a professional tone, ready for delivery.
+      `;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: prompt,
+        config: {
+          systemInstruction: "You are the lead architect at Nexus AI Hub. You provide elite, concise, yet detailed technical and creative solutions for clients."
+        }
+      });
+
+      if (response.text) {
+        setAdminResponse(response.text.trim());
+      }
+    } catch (error) {
+      console.error('AI Generation failed:', error);
+      alert('AI Assistant is currently unavailable. Please draft manually.');
+    } finally {
+      setIsAiGenerating(false);
+    }
   };
 
   const handleFileUpload = async (files: File[]) => {
@@ -84,7 +116,7 @@ const AdminOverview: React.FC = () => {
         bill_amount: parseFloat(billAmount) || 0,
         status: 'Customer Review',
         admin_attachments: finalAttachments,
-        rework_feedback: null // Clear feedback once solution is re-submitted
+        rework_feedback: null
       }).eq('id', selectedProject.id);
       
       if (error) throw error;
@@ -117,7 +149,6 @@ const AdminOverview: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <div className="flex items-center gap-3 text-slate-500 mb-2 font-medium"><Briefcase className="w-5 h-5" /> Total Projects</div>
@@ -196,12 +227,9 @@ const AdminOverview: React.FC = () => {
         </div>
       </div>
 
-      {/* ADMIN REVIEW MODAL */}
       {selectedProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="bg-white rounded-[40px] shadow-2xl max-w-7xl w-full my-8 animate-in slide-in-from-bottom-4 duration-400 overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
-            
-            {/* Left Side: PROJECT DETAILS */}
             <div className="flex-1 p-10 space-y-8 overflow-y-auto bg-slate-50/50 border-r border-slate-200">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3">
@@ -211,9 +239,8 @@ const AdminOverview: React.FC = () => {
               </div>
               
               <div className="space-y-8">
-                {/* Rework Instructions (CRITICAL FOR ADMIN) */}
                 {selectedProject.status === 'Rework Requested' && selectedProject.rework_feedback && (
-                  <div className="bg-orange-600 text-white p-8 rounded-[32px] shadow-xl animate-bounce-short">
+                  <div className="bg-orange-600 text-white p-8 rounded-[32px] shadow-xl">
                     <div className="flex items-center gap-2 mb-4">
                       <AlertTriangle className="w-6 h-6" />
                       <h4 className="text-sm font-black uppercase tracking-widest">REWORK FEEDBACK FROM CLIENT</h4>
@@ -224,7 +251,6 @@ const AdminOverview: React.FC = () => {
                   </div>
                 )}
 
-                {/* History Section (Previously Submitted Work) */}
                 {selectedProject.admin_response && (
                   <div className="bg-white p-8 rounded-[32px] border-2 border-slate-200 opacity-70">
                     <div className="flex items-center gap-2 mb-6 text-slate-400">
@@ -238,7 +264,6 @@ const AdminOverview: React.FC = () => {
                   </div>
                 )}
 
-                {/* Client Assets and Info */}
                 <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm">
                   <div className="flex items-center gap-2 mb-6 text-blue-600">
                     <FileText className="w-5 h-5" />
@@ -250,7 +275,6 @@ const AdminOverview: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Side: ADMIN ACTION */}
             <div className="w-full md:w-[450px] p-10 bg-white flex flex-col space-y-8 relative overflow-y-auto">
               <div className="flex justify-between items-center sticky top-0 bg-white z-10 pb-4 border-b">
                 <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
@@ -260,9 +284,33 @@ const AdminOverview: React.FC = () => {
               </div>
 
               <div className="space-y-6 flex-1">
-                <div>
+                <div className="relative group">
+                  <button 
+                    onClick={generateAiDraft}
+                    disabled={isAiGenerating}
+                    className="absolute -top-3 right-0 z-20 bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                  >
+                    {isAiGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                    {isAiGenerating ? 'Drafting...' : 'Draft with Nexus AI'}
+                  </button>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Expert Final Response</label>
-                  <textarea className="w-full p-5 bg-slate-50 border border-slate-200 rounded-[24px] outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-700" rows={8} placeholder="Write the rework notes or final delivery notes here..." value={adminResponse} onChange={(e) => setAdminResponse(e.target.value)} />
+                  <div className="relative">
+                    {isAiGenerating && (
+                      <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[1px] rounded-[24px] flex items-center justify-center">
+                        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-xl border border-slate-100 animate-pulse-soft">
+                          <Sparkles className="w-4 h-4 text-indigo-500" />
+                          <span className="text-[10px] font-black text-slate-600 uppercase">AI is analyzing brief...</span>
+                        </div>
+                      </div>
+                    )}
+                    <textarea 
+                      className="w-full p-5 bg-slate-50 border border-slate-200 rounded-[24px] outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-700" 
+                      rows={10} 
+                      placeholder="Write the rework notes or final delivery notes here..." 
+                      value={adminResponse} 
+                      onChange={(e) => setAdminResponse(e.target.value)} 
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -288,7 +336,7 @@ const AdminOverview: React.FC = () => {
                 </div>
               </div>
 
-              <button onClick={handleSubmitSolution} disabled={uploading} className="w-full bg-slate-900 text-white py-5 rounded-[24px] font-black text-lg shadow-2xl hover:bg-indigo-600 active:scale-95 transition-all flex items-center justify-center gap-3">
+              <button onClick={handleSubmitSolution} disabled={uploading || isAiGenerating} className="w-full bg-slate-900 text-white py-5 rounded-[24px] font-black text-lg shadow-2xl hover:bg-indigo-600 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
                 {uploading ? <Loader2 className="animate-spin" /> : <><CheckCircle className="w-6 h-6" /> SUBMIT WORK</>}
               </button>
             </div>
