@@ -105,15 +105,24 @@ const AIServices: React.FC<AIServicesProps> = ({ role }) => {
 
       // Notify Admin
       if (data) {
-        await sendEmailNotification(
+        const notifyResult = await sendEmailNotification(
           'admin',
           `NEW PROJECT ALERT: #${data.project_number}`,
           `A new AI Service brief "${projectName}" has been launched by ${user.email}.\n\nDescription: ${description}`
         );
+
+        if (!notifyResult.success) {
+          console.warn('[Nexus Hub] Project saved, but email notification failed:', notifyResult.error);
+          alert(`Success: Project launched, but admin notification email failed (${notifyResult.error}). Our team will still see it in the dashboard.`);
+        }
       }
 
       setShowForm(false); fetchProjects(); setProjectName(''); setDescription(''); setTempAttachments([]);
-    } catch (err: any) { alert(err.message); } finally { setSubmitting(false); }
+    } catch (err: any) { 
+      alert(`Submission Error: ${err.message}`); 
+    } finally { 
+      setSubmitting(false); 
+    }
   };
 
   const handleUpdateStatus = async (projectId: string, status: string) => {
