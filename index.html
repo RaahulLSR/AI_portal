@@ -10,52 +10,33 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         
-        /* High-fidelity Print Styles */
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; }
-            
-            body { 
-                background: white !important; 
-                margin: 0 !important;
-                padding: 0 !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            
-            @page { 
-                margin: 0;
-                size: auto;
-            }
-
-            .invoice-page {
-                padding: 2cm;
-                min-height: 29.7cm; /* A4 Height */
-                background: white !important;
-                page-break-after: always;
-                break-after: page;
-            }
-
-            .invoice-page:last-child {
-                page-break-after: auto;
-                break-after: auto;
-            }
+            body { background: white !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            @page { margin: 0; size: auto; }
+            .invoice-page { padding: 2cm; min-height: 29.7cm; background: white !important; page-break-after: always; break-after: page; }
+            .invoice-page:last-child { page-break-after: auto; break-after: auto; }
         }
         .print-only { display: none; }
     </style>
 <script type="importmap">
 {
   "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.89.0",
     "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "vite": "https://esm.sh/vite@^7.3.0"
   }
 }
 </script>
 </head>
 <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
+    <!-- Crucial for Vercel: The entry point script -->
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>

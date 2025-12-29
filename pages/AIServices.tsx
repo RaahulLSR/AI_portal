@@ -208,7 +208,6 @@ const AIServices: React.FC<AIServicesProps> = ({ role }) => {
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white p-6 md:p-10 rounded-[40px] shadow-2xl border border-slate-100 space-y-8 animate-in slide-in-from-top-4 duration-300 max-w-5xl mx-auto">
           <div className="space-y-8">
-            {/* Row 1: Basics */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Project Name</label>
@@ -220,7 +219,6 @@ const AIServices: React.FC<AIServicesProps> = ({ role }) => {
               </div>
             </div>
 
-            {/* Row 2: Apparel Details */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Type of Dress/Apparel</label>
@@ -236,7 +234,6 @@ const AIServices: React.FC<AIServicesProps> = ({ role }) => {
               </div>
             </div>
 
-            {/* Row 3: Demographics */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Target Gender</label>
@@ -253,7 +250,6 @@ const AIServices: React.FC<AIServicesProps> = ({ role }) => {
               </div>
             </div>
 
-            {/* Row 4: Service "Wants" */}
             <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
               <h4 className="text-xs font-black uppercase text-slate-400 mb-4 ml-1">What do you want from this project?</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -272,7 +268,6 @@ const AIServices: React.FC<AIServicesProps> = ({ role }) => {
               </div>
             </div>
 
-            {/* Row 5: Description & Files */}
             <div className="space-y-4">
               <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Additional Instructions</label>
               <textarea required rows={4} className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-blue-100 transition-all font-medium" placeholder="Describe any specific design details or textures..." value={description} onChange={e => setDescription(e.target.value)} />
@@ -330,7 +325,6 @@ const AIServices: React.FC<AIServicesProps> = ({ role }) => {
         ))}
       </div>
 
-      {/* PROJECT DETAILS MODAL */}
       {selectedProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="bg-white rounded-[40px] shadow-2xl max-w-5xl w-full my-8 animate-in zoom-in duration-300 overflow-hidden flex flex-col max-h-[90vh]">
@@ -346,8 +340,6 @@ const AIServices: React.FC<AIServicesProps> = ({ role }) => {
             </div>
 
             <div className="flex-1 p-8 space-y-10 overflow-y-auto bg-slate-50/30">
-              
-              {/* SOLUTION SECTION */}
               {selectedProject.admin_response && (
                 <div className={`${selectedProject.status === 'Rework Requested' ? 'opacity-60 bg-slate-100 border-slate-200' : 'bg-indigo-600 text-white shadow-2xl'} rounded-[32px] p-8 space-y-6 relative overflow-hidden transition-all shadow-lg`}>
                   <div className="flex items-center justify-between relative z-10">
@@ -369,7 +361,6 @@ const AIServices: React.FC<AIServicesProps> = ({ role }) => {
                 </div>
               )}
 
-              {/* REWORK FEEDBACK */}
               {selectedProject.rework_feedback && (
                 <div className="bg-orange-50 border-2 border-orange-200 rounded-[32px] p-8 space-y-4 shadow-sm">
                   <div className="flex items-center gap-3 text-orange-600">
@@ -382,7 +373,6 @@ const AIServices: React.FC<AIServicesProps> = ({ role }) => {
                 </div>
               )}
 
-              {/* PROJECT SPECIFICATIONS */}
               <div className="bg-white border border-slate-200 rounded-[32px] p-8 space-y-8 shadow-sm">
                 <div className="flex items-center gap-3 text-blue-600 border-b border-slate-100 pb-4">
                   <Shirt className="w-6 h-6" />
@@ -406,44 +396,14 @@ const AIServices: React.FC<AIServicesProps> = ({ role }) => {
                     <p className="text-[10px] font-black text-slate-400 uppercase">Age Group</p>
                     <p className="font-bold text-slate-900">{selectedProject.spec_age_group}</p>
                   </div>
-                  <div className="col-span-2">
-                    <p className="text-[10px] font-black text-slate-400 uppercase">Target Colors</p>
-                    <p className="font-bold text-slate-900">{selectedProject.spec_colors}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-[10px] font-black text-slate-400 uppercase">Sizes Needed</p>
-                    <p className="font-bold text-slate-900">{selectedProject.spec_sizes}</p>
-                  </div>
-                </div>
-
-                <div className="pt-6 border-t border-slate-50">
-                  <p className="text-[10px] font-black text-slate-400 uppercase mb-3">Service Requirements</p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedProject.wants_new_style && <span className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-black uppercase rounded-lg">New Style</span>}
-                    {selectedProject.wants_tag_creation && <span className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-black uppercase rounded-lg">Tag/Label</span>}
-                    {selectedProject.wants_color_variations && <span className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-black uppercase rounded-lg">Color Variants</span>}
-                    {selectedProject.wants_style_variations && <span className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-black uppercase rounded-lg">Style Variants</span>}
-                    {selectedProject.wants_marketing_poster && <span className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-black uppercase rounded-lg">Marketing Poster</span>}
-                  </div>
-                </div>
-
-                <div className="pt-6 border-t border-slate-50 grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div className="md:col-span-2">
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Instructions</p>
-                    <p className="text-slate-700 font-bold leading-relaxed">{selectedProject.description}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Client Assets</p>
-                    <AttachmentGrid paths={selectedProject.attachments} />
-                  </div>
                 </div>
               </div>
             </div>
-
+            
             <div className="p-6 border-t bg-white sticky bottom-0 z-30 shadow-lg">
               {selectedProject.status === 'Customer Review' && role === 'customer' && (
                 <div className="grid grid-cols-2 gap-4">
-                  <button onClick={() => handleUpdateStatus(selectedProject.id, 'Accepted')} className="bg-green-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl hover:bg-green-700 transition-all flex items-center justify-center gap-3">
+                  <button onClick={() => handleUpdateStatus(selectedProject!.id, 'Accepted')} className="bg-green-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl hover:bg-green-700 transition-all flex items-center justify-center gap-3">
                     <CheckCircle2 className="w-6 h-6" /> ACCEPT WORK
                   </button>
                   <button onClick={() => setShowReworkModal(true)} className="bg-orange-50 text-orange-700 border-2 border-orange-100 py-5 rounded-2xl font-black text-lg hover:bg-orange-100 transition-all flex items-center justify-center gap-3">
@@ -451,22 +411,6 @@ const AIServices: React.FC<AIServicesProps> = ({ role }) => {
                   </button>
                 </div>
               )}
-              {(!selectedProject.admin_response || selectedProject.status === 'Completed' || selectedProject.status === 'Accepted' || selectedProject.status === 'Rework Requested') && (
-                <button onClick={() => setSelectedProject(null)} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-slate-800 transition-all">Close</button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showReworkModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
-          <div className="bg-white rounded-[40px] shadow-2xl max-w-lg w-full p-10 space-y-6 animate-in zoom-in duration-300">
-            <h3 className="text-2xl font-black text-center">Specific Rework Instructions</h3>
-            <textarea autoFocus className="w-full p-6 bg-slate-50 border border-slate-200 rounded-3xl outline-none font-bold min-h-[200px]" placeholder="Explain the changes clearly..." value={reworkFeedback} onChange={e => setReworkFeedback(e.target.value)} />
-            <div className="grid grid-cols-2 gap-4">
-              <button onClick={() => setShowReworkModal(false)} className="py-4 bg-slate-100 font-black rounded-2xl">CANCEL</button>
-              <button disabled={!reworkFeedback.trim()} onClick={() => handleUpdateStatus(selectedProject!.id, 'Rework Requested')} className="py-4 bg-orange-600 text-white font-black rounded-2xl shadow-xl hover:bg-orange-700">SUBMIT FEEDBACK</button>
             </div>
           </div>
         </div>
