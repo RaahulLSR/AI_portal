@@ -12,8 +12,11 @@ export const sendEmailNotification = async (to: string, subject: string, body: s
     const result = await response.json();
 
     if (!response.ok) {
-      // Log the full error to the console for developer visibility
       console.error('[Nexus Notify] Server-side error:', result);
+      // Dispatch error event
+      window.dispatchEvent(new CustomEvent('nexus-mail-error', { 
+        detail: { error: result.error || 'Dispatch failed' } 
+      }));
       return { 
         success: false, 
         error: result.error || 'Mail dispatch failed',
@@ -22,9 +25,18 @@ export const sendEmailNotification = async (to: string, subject: string, body: s
     }
 
     console.log('[Nexus Notify] Successfully delivered:', result.messageId);
+    
+    // Dispatch success event for the UI to show a Toast
+    window.dispatchEvent(new CustomEvent('nexus-mail-sent', { 
+      detail: { recipient: result.recipient || to } 
+    }));
+
     return { success: true, data: result };
   } catch (error) {
     console.error('[Nexus Notify] Fetch error:', error);
+    window.dispatchEvent(new CustomEvent('nexus-mail-error', { 
+      detail: { error: 'Network communication failure' } 
+    }));
     return { success: false, error: 'Network communication failure' };
   }
 };

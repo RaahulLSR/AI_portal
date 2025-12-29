@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Profile } from '../types.ts';
 import Sidebar from '../components/Sidebar.tsx';
 import AIServices from './AIServices.tsx';
@@ -9,15 +9,49 @@ import Billing from './Billing.tsx';
 import AdminOverview from './AdminOverview.tsx';
 import ProfileSettings from './ProfileSettings.tsx';
 import ProjectHistory from './ProjectHistory.tsx';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, CheckCircle2, AlertCircle, Mail, Loader2 } from 'lucide-react';
 
 interface DashboardProps {
   userProfile: Profile | null;
 }
 
+interface Toast {
+  id: string;
+  type: 'success' | 'error';
+  message: string;
+}
+
 const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
   const [activeTab, setActiveTab] = useState('Overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const addToast = useCallback((type: 'success' | 'error', message: string) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts(prev => [...prev, { id, type, message }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 5000);
+  }, []);
+
+  useEffect(() => {
+    const handleMailSent = (e: any) => {
+      const recipient = e.detail.recipient;
+      addToast('success', `Email dispatched to ${recipient}`);
+    };
+
+    const handleMailError = (e: any) => {
+      addToast('error', `Mail system error: ${e.detail.error}`);
+    };
+
+    window.addEventListener('nexus-mail-sent' as any, handleMailSent);
+    window.addEventListener('nexus-mail-error' as any, handleMailError);
+
+    return () => {
+      window.removeEventListener('nexus-mail-sent' as any, handleMailSent);
+      window.removeEventListener('nexus-mail-error' as any, handleMailError);
+    };
+  }, [addToast]);
 
   const renderContent = () => {
     const role = userProfile?.role || 'customer';
@@ -35,7 +69,37 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#f8fafc]">
+    <div className="min-h-screen flex bg-[#f8fafc] relative">
+      {/* Global Toast Container */}
+      <div className="fixed top-24 right-6 md:right-12 z-[100] flex flex-col gap-3 pointer-events-none">
+        {toasts.map(toast => (
+          <div 
+            key={toast.id} 
+            className={`pointer-events-auto flex items-center gap-4 px-6 py-4 rounded-[1.25rem] shadow-2xl border animate-in slide-in-from-right-10 duration-300 ${
+              toast.type === 'success' 
+                ? 'bg-slate-900 border-slate-800 text-white' 
+                : 'bg-red-600 border-red-500 text-white'
+            }`}
+          >
+            <div className={`p-2 rounded-lg ${toast.type === 'success' ? 'bg-blue-600' : 'bg-red-700'}`}>
+              {toast.type === 'success' ? <Mail className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-widest opacity-60">
+                {toast.type === 'success' ? 'Nexus Communications' : 'System Alert'}
+              </span>
+              <p className="text-sm font-bold tracking-tight">{toast.message}</p>
+            </div>
+            <button 
+              onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+              className="ml-4 opacity-40 hover:opacity-100 transition-opacity"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+
       {/* Sidebar - Desktop */}
       <div className="hidden md:block w-72 h-screen sticky top-0 z-50 shadow-[1px_0_0_0_rgba(0,0,0,0.05)]">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} role={userProfile?.role || 'customer'} />
