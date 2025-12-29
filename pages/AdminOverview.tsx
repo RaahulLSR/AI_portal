@@ -2,25 +2,34 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { Project, Profile } from '../types';
-import { GoogleGenAI } from '@google/genai';
 import { 
   Briefcase, 
   Clock, 
   Users, 
   Search, 
+  MessageSquare, 
   DollarSign, 
   Eye,
   CheckCircle,
+  RotateCcw,
+  UserPlus,
+  UserMinus,
+  Paperclip,
+  Download,
   Upload,
   X,
   Loader2,
   History,
   ClipboardList,
+  RefreshCw,
   User as UserIcon,
   Sparkles,
   FileText,
+  Tag,
+  ShieldAlert,
   AlertTriangle,
-  Wand2
+  ExternalLink,
+  Layers
 } from 'lucide-react';
 import { AttachmentGrid } from './AIServices';
 
@@ -36,11 +45,8 @@ const AdminOverview: React.FC = () => {
   const [adminResponse, setAdminResponse] = useState('');
   const [tempAttachments, setTempAttachments] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [isAiGenerating, setIsAiGenerating] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -51,52 +57,11 @@ const AdminOverview: React.FC = () => {
     setLoading(false);
   };
 
-  const generateAiDraft = async () => {
-    if (!selectedProject) return;
-    setIsAiGenerating(true);
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const prompt = `
-        You are an expert AI consultant and project manager for "Nexus AI Hub".
-        A client has requested a project in the category: ${selectedProject.category}.
-        Project Name: ${selectedProject.project_name || 'N/A'}
-        Client Brief: ${selectedProject.description}
-        
-        Please draft a professional, high-end, and comprehensive response or technical solution. 
-        - If it's "AI Services" (apparel/design), describe the creative direction and AI tools used.
-        - If it's "Websites & Apps", provide a technical architecture overview.
-        - If it's "Automations", describe the logic flow and efficiency gains.
-        
-        Format the response in a professional tone, ready for delivery.
-      `;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: prompt,
-        config: {
-          systemInstruction: "You are the lead architect at Nexus AI Hub. You provide elite, concise, yet detailed technical and creative solutions for clients."
-        }
-      });
-
-      if (response.text) {
-        setAdminResponse(response.text.trim());
-      }
-    } catch (error) {
-      console.error('AI Generation failed:', error);
-      alert('AI Assistant is currently unavailable. Please draft manually.');
-    } finally {
-      setIsAiGenerating(false);
-    }
-  };
-
   const handleFileUpload = async (files: File[]) => {
     const uploadedPaths: string[] = [];
     for (const file of files) {
-      const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-      const fileName = `solution-${Date.now()}-${cleanName}`;
-      const { data, error } = await supabase.storage
-        .from('attachments')
-        .upload(fileName, file);
+      const fileName = `solution-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+      const { data, error } = await supabase.storage.from('attachments').upload(fileName, file);
       if (!error && data) uploadedPaths.push(data.path);
     }
     return uploadedPaths;
@@ -105,12 +70,10 @@ const AdminOverview: React.FC = () => {
   const handleSubmitSolution = async () => {
     if (!selectedProject) return;
     setUploading(true);
-    
     try {
       const solutionPaths = await handleFileUpload(tempAttachments);
       const existingAttachments = selectedProject.admin_attachments || [];
       const finalAttachments = [...existingAttachments, ...solutionPaths];
-
       const { error } = await supabase.from('projects').update({
         admin_response: adminResponse,
         bill_amount: parseFloat(billAmount) || 0,
@@ -118,26 +81,15 @@ const AdminOverview: React.FC = () => {
         admin_attachments: finalAttachments,
         rework_feedback: null
       }).eq('id', selectedProject.id);
-      
       if (error) throw error;
-      
-      setSelectedProject(null);
-      setBillAmount('');
-      setAdminResponse('');
-      setTempAttachments([]);
-      fetchData();
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setUploading(false);
-    }
+      setSelectedProject(null); setBillAmount(''); setAdminResponse(''); setTempAttachments([]); fetchData();
+    } catch (err: any) { alert(err.message); } finally { setUploading(false); }
   };
 
   const handleToggleRole = async (userId: string, currentRole: string) => {
     const newRole = currentRole === 'admin' ? 'customer' : 'admin';
-    const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
-    if (error) alert(error.message);
-    else fetchData();
+    await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
+    fetchData();
   };
 
   const filteredProjects = projects.filter(p => 
@@ -148,61 +100,63 @@ const AdminOverview: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <div className="flex items-center gap-3 text-slate-500 mb-2 font-medium"><Briefcase className="w-5 h-5" /> Total Projects</div>
-          <div className="text-2xl font-black">{projects.length}</div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <div className="flex items-center gap-3 text-amber-500 mb-2 font-medium"><Clock className="w-5 h-5" /> Pending Actions</div>
-          <div className="text-2xl font-black">{projects.filter(p => ['Pending', 'In Progress', 'Rework Requested'].includes(p.status)).length}</div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <div className="flex items-center gap-3 text-blue-500 mb-2 font-medium"><Users className="w-5 h-5" /> Total Users</div>
-          <div className="text-2xl font-black">{customers.length}</div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <div className="flex items-center gap-3 text-green-600 mb-2 font-medium"><DollarSign className="w-5 h-5" /> Billing Projection</div>
-          <div className="text-2xl font-black">${projects.reduce((sum, p) => sum + (p.bill_amount || 0), 0).toFixed(2)}</div>
-        </div>
+    <div className="space-y-10 animate-in fade-in duration-500">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {[
+          { icon: Layers, label: 'Global Capacity', value: projects.length, color: 'blue' },
+          { icon: Clock, label: 'Action Pipeline', value: projects.filter(p => ['Pending', 'In Progress', 'Rework Requested'].includes(p.status)).length, color: 'amber' },
+          { icon: Users, label: 'Active Licenses', value: customers.length, color: 'indigo' },
+          { icon: DollarSign, label: 'AUM Projection', value: `$${projects.reduce((sum, p) => sum + (p.bill_amount || 0), 0).toLocaleString()}`, color: 'emerald' },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 transition-all hover:shadow-xl hover:translate-y-[-4px]">
+            <div className={`flex items-center gap-3 text-${stat.color}-500 mb-4 font-black uppercase tracking-widest text-[9px]`}>
+              <stat.icon className="w-4 h-4" /> {stat.label}
+            </div>
+            <div className="text-3xl font-black text-slate-900 tracking-tight">{stat.value}</div>
+          </div>
+        ))}
       </div>
 
-      <div className="flex p-1 bg-slate-100 rounded-xl w-fit">
-        <button onClick={() => setActiveSubTab('projects')} className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${activeSubTab === 'projects' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>Project Feed</button>
-        <button onClick={() => setActiveSubTab('users')} className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${activeSubTab === 'users' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>User Management</button>
+      <div className="flex p-1 bg-slate-100/50 rounded-2xl w-fit">
+        <button onClick={() => setActiveSubTab('projects')} className={`px-8 py-3 rounded-[0.9rem] font-black text-xs uppercase tracking-widest transition-all ${activeSubTab === 'projects' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Operations Feed</button>
+        <button onClick={() => setActiveSubTab('users')} className={`px-8 py-3 rounded-[0.9rem] font-black text-xs uppercase tracking-widest transition-all ${activeSubTab === 'users' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Identity MGMT</button>
       </div>
 
-      <div className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <h3 className="text-xl font-black text-slate-900">{activeSubTab === 'projects' ? 'Global Orders' : 'System Users'}</h3>
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-            <input type="text" placeholder="Search orders..." className="pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm w-full md:w-64 outline-none focus:ring-2 focus:ring-blue-500" value={filter} onChange={(e) => setFilter(e.target.value)} />
+      <div className="bg-white rounded-[3rem] border border-slate-100 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.03)] overflow-hidden">
+        <div className="p-10 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <h3 className="text-2xl font-black text-slate-900 tracking-tight">{activeSubTab === 'projects' ? 'System Order Stream' : 'Authorized Personnel'}</h3>
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
+            <input type="text" placeholder="Filter global state..." className="pl-12 pr-6 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm w-full md:w-80 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white transition-all font-medium" value={filter} onChange={(e) => setFilter(e.target.value)} />
           </div>
         </div>
 
         <div className="overflow-x-auto">
           {activeSubTab === 'projects' ? (
             <table className="w-full text-left">
-              <thead className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                <tr><th className="px-8 py-4">Project ID</th><th className="px-8 py-4">Customer / Brand</th><th className="px-8 py-4">Status</th><th className="px-8 py-4 text-right">Review</th></tr>
+              <thead className="bg-slate-50/50 text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">
+                <tr><th className="px-10 py-5">Reference ID</th><th className="px-10 py-5">Origin / Brand</th><th className="px-10 py-5">Process State</th><th className="px-10 py-5 text-right">Actions</th></tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-50">
                 {filteredProjects.map(p => (
-                  <tr key={p.id} className="hover:bg-slate-50/80 transition-all">
-                    <td className="px-8 py-6 font-black text-slate-900">#{p.project_number}</td>
-                    <td className="px-8 py-6">
-                      <div className="font-bold text-slate-800">{p.profiles?.brand_name || 'Personal'}</div>
-                      <div className="text-xs text-slate-400">{p.profiles?.email}</div>
+                  <tr key={p.id} className="hover:bg-slate-50/50 transition-all group">
+                    <td className="px-10 py-8 font-black text-slate-900 text-sm">#{p.project_number}</td>
+                    <td className="px-10 py-8">
+                      <div className="font-bold text-slate-800 text-sm leading-none mb-1">{p.profiles?.brand_name || 'Individual'}</div>
+                      <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{p.profiles?.email}</div>
                     </td>
-                    <td className="px-8 py-6">
-                      <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${p.status === 'Rework Requested' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'}`}>
+                    <td className="px-10 py-8">
+                      <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                        p.status === 'Rework Requested' ? 'bg-amber-100 text-amber-600 shadow-sm shadow-amber-50' : 
+                        p.status === 'Customer Review' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' :
+                        'bg-slate-100 text-slate-400'
+                      }`}>
                         {p.status}
                       </span>
                     </td>
-                    <td className="px-8 py-6 text-right">
-                      <button onClick={() => { setSelectedProject(p); setBillAmount(p.bill_amount.toString()); setAdminResponse(p.admin_response || ''); }} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-600 transition-all"><Eye className="w-4 h-4" /></button>
+                    <td className="px-10 py-8 text-right">
+                      <button onClick={() => { setSelectedProject(p); setBillAmount(p.bill_amount.toString()); setAdminResponse(p.admin_response || ''); }} className="bg-slate-900 text-white p-3.5 rounded-2xl font-black text-sm hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 group-hover:scale-105 active:scale-95"><Eye className="w-4 h-4" /></button>
                     </td>
                   </tr>
                 ))}
@@ -210,15 +164,15 @@ const AdminOverview: React.FC = () => {
             </table>
           ) : (
             <table className="w-full text-left">
-              <thead className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                <tr><th className="px-8 py-4">User</th><th className="px-8 py-4">Role</th><th className="px-8 py-4 text-right">Actions</th></tr>
+              <thead className="bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">
+                <tr><th className="px-10 py-5">User Identity</th><th className="px-10 py-5">Access Level</th><th className="px-10 py-5 text-right">Privileges</th></tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-50">
                 {customers.map(u => (
-                  <tr key={u.id} className="hover:bg-slate-50">
-                    <td className="px-8 py-6"><div className="font-black text-slate-900">{u.email}</div></td>
-                    <td className="px-8 py-6"><span className="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-600">{u.role}</span></td>
-                    <td className="px-8 py-6 text-right"><button onClick={() => handleToggleRole(u.id, u.role)} className="text-xs font-black uppercase text-blue-600 hover:underline">Toggle Role</button></td>
+                  <tr key={u.id} className="hover:bg-slate-50 transition-all">
+                    <td className="px-10 py-8"><div className="font-black text-slate-900">{u.email}</div></td>
+                    <td className="px-10 py-8"><span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${u.role === 'admin' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-slate-100 text-slate-500'}`}>{u.role}</span></td>
+                    <td className="px-10 py-8 text-right"><button onClick={() => handleToggleRole(u.id, u.role)} className="text-[9px] font-black uppercase text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-xl transition-all tracking-widest">Update Permissions</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -227,117 +181,98 @@ const AdminOverview: React.FC = () => {
         </div>
       </div>
 
+      {/* ADMIN REVIEW MODAL */}
       {selectedProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-[40px] shadow-2xl max-w-7xl w-full my-8 animate-in slide-in-from-bottom-4 duration-400 overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
-            <div className="flex-1 p-10 space-y-8 overflow-y-auto bg-slate-50/50 border-r border-slate-200">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-                  <div className="p-3 bg-blue-600 text-white rounded-2xl"><ClipboardList /></div>
-                  Project Scope
-                </h3>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-xl p-4 overflow-y-auto animate-in fade-in duration-500">
+          <div className="bg-white rounded-[4rem] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.3)] max-w-7xl w-full my-8 animate-in slide-in-from-bottom-10 duration-500 overflow-hidden flex flex-col md:flex-row max-h-[95vh] border border-white">
+            
+            <div className="flex-1 p-12 space-y-10 overflow-y-auto bg-slate-50/30 border-r border-slate-50">
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-4 bg-slate-900 text-white rounded-3xl shadow-xl"><ClipboardList className="w-6 h-6" /></div>
+                  <div>
+                    <h3 className="text-3xl font-black text-slate-900 tracking-tight leading-none">Operational Scope</h3>
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] mt-2">Internal Case File #{selectedProject.project_number}</p>
+                  </div>
+                </div>
               </div>
               
-              <div className="space-y-8">
+              <div className="space-y-10">
                 {selectedProject.status === 'Rework Requested' && selectedProject.rework_feedback && (
-                  <div className="bg-orange-600 text-white p-8 rounded-[32px] shadow-xl">
-                    <div className="flex items-center gap-2 mb-4">
-                      <AlertTriangle className="w-6 h-6" />
-                      <h4 className="text-sm font-black uppercase tracking-widest">REWORK FEEDBACK FROM CLIENT</h4>
+                  <div className="bg-amber-600 text-white p-10 rounded-[2.5rem] shadow-2xl shadow-amber-100 animate-in slide-in-from-left duration-700">
+                    <div className="flex items-center gap-3 mb-6">
+                      <AlertTriangle className="w-7 h-7" />
+                      <h4 className="text-xs font-black uppercase tracking-[0.3em]">Critical Change Protocol</h4>
                     </div>
-                    <p className="bg-white/10 p-6 rounded-2xl font-black text-lg border border-white/20 whitespace-pre-wrap">
+                    <p className="bg-white/10 backdrop-blur-md p-8 rounded-[1.75rem] font-black text-xl border border-white/20 whitespace-pre-wrap leading-relaxed shadow-inner">
                       {selectedProject.rework_feedback}
                     </p>
                   </div>
                 )}
 
                 {selectedProject.admin_response && (
-                  <div className="bg-white p-8 rounded-[32px] border-2 border-slate-200 opacity-70">
-                    <div className="flex items-center gap-2 mb-6 text-slate-400">
+                  <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm opacity-60 hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-3 mb-8 text-slate-300">
                       <History className="w-5 h-5" />
-                      <h4 className="text-sm font-black uppercase tracking-widest">Previously Submitted Work</h4>
+                      <h4 className="text-xs font-black uppercase tracking-[0.2em]">Previous Iteration Delivery</h4>
                     </div>
-                    <div className="space-y-4">
-                      <p className="text-slate-600 font-medium bg-slate-50 p-6 rounded-2xl border italic">{selectedProject.admin_response}</p>
+                    <div className="space-y-6">
+                      <p className="text-slate-500 font-bold text-lg bg-slate-50/50 p-8 rounded-[1.75rem] border border-slate-50 italic">{selectedProject.admin_response}</p>
                       <AttachmentGrid paths={selectedProject.admin_attachments} />
                     </div>
                   </div>
                 )}
 
-                <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm">
-                  <div className="flex items-center gap-2 mb-6 text-blue-600">
+                <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                  <div className="flex items-center gap-3 mb-8 text-blue-600">
                     <FileText className="w-5 h-5" />
-                    <h4 className="text-sm font-black uppercase tracking-widest">Initial Client Brief</h4>
+                    <h4 className="text-xs font-black uppercase tracking-[0.2em]">Inbound Transmitted Brief</h4>
                   </div>
-                  <p className="text-slate-700 font-bold leading-relaxed mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-100 whitespace-pre-wrap">{selectedProject.description}</p>
+                  <p className="text-slate-900 font-black text-xl leading-relaxed mb-8 bg-slate-50/50 p-8 rounded-[1.75rem] border border-slate-50 whitespace-pre-wrap shadow-inner">{selectedProject.description}</p>
                   <AttachmentGrid paths={selectedProject.attachments} />
                 </div>
               </div>
             </div>
 
-            <div className="w-full md:w-[450px] p-10 bg-white flex flex-col space-y-8 relative overflow-y-auto">
-              <div className="flex justify-between items-center sticky top-0 bg-white z-10 pb-4 border-b">
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                  <Sparkles className="text-indigo-600" /> Deliver Solution
+            <div className="w-full md:w-[500px] p-12 bg-white flex flex-col space-y-10 relative overflow-y-auto shadow-[-1px_0_0_0_rgba(0,0,0,0.05)]">
+              <div className="flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur-md z-10 pb-6 border-b border-slate-50">
+                <h3 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                  <Sparkles className="text-indigo-600" /> Dispatch
                 </h3>
-                <button onClick={() => setSelectedProject(null)} className="p-2 hover:bg-slate-100 rounded-full"><X className="w-6 h-6" /></button>
+                <button onClick={() => setSelectedProject(null)} className="p-3 bg-slate-50 rounded-full hover:bg-slate-100 transition-all"><X className="w-7 h-7 text-slate-400" /></button>
               </div>
 
-              <div className="space-y-6 flex-1">
-                <div className="relative group">
-                  <button 
-                    onClick={generateAiDraft}
-                    disabled={isAiGenerating}
-                    className="absolute -top-3 right-0 z-20 bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
-                  >
-                    {isAiGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                    {isAiGenerating ? 'Drafting...' : 'Draft with Nexus AI'}
-                  </button>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Expert Final Response</label>
-                  <div className="relative">
-                    {isAiGenerating && (
-                      <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[1px] rounded-[24px] flex items-center justify-center">
-                        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-xl border border-slate-100 animate-pulse-soft">
-                          <Sparkles className="w-4 h-4 text-indigo-500" />
-                          <span className="text-[10px] font-black text-slate-600 uppercase">AI is analyzing brief...</span>
-                        </div>
-                      </div>
-                    )}
-                    <textarea 
-                      className="w-full p-5 bg-slate-50 border border-slate-200 rounded-[24px] outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-700" 
-                      rows={10} 
-                      placeholder="Write the rework notes or final delivery notes here..." 
-                      value={adminResponse} 
-                      onChange={(e) => setAdminResponse(e.target.value)} 
-                    />
-                  </div>
+              <div className="space-y-8 flex-1">
+                <div className="space-y-4">
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] ml-2">Final Expert Response</label>
+                  <textarea className="w-full p-8 bg-slate-50 border border-slate-100 rounded-[2rem] outline-none focus:ring-8 focus:ring-blue-50 focus:border-blue-500 transition-all font-bold text-slate-700 text-lg shadow-inner" rows={8} placeholder="Document the delivery parameters or rework resolution..." value={adminResponse} onChange={(e) => setAdminResponse(e.target.value)} />
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Solution Assets (New/Additional)</label>
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-200 rounded-[24px] cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all">
-                    <Upload className="w-8 h-8 text-slate-400 mb-1" />
-                    <p className="text-xs text-slate-500 font-bold">New Deliverables</p>
+                <div className="space-y-4">
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] ml-2">Master Artifact Upload</label>
+                  <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-200 rounded-[2rem] cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all group relative overflow-hidden">
+                    <Upload className="w-10 h-10 text-slate-200 group-hover:text-blue-500 transition-colors mb-2" />
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Transmit Assets</p>
                     <input type="file" className="hidden" multiple onChange={(e) => setTempAttachments(Array.from(e.target.files || []))} />
                   </label>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {tempAttachments.map((f, i) => (
-                      <span key={i} className="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg border border-blue-100">{f.name}</span>
+                      <span key={i} className="px-4 py-2 bg-blue-50 text-blue-600 text-[10px] font-black rounded-xl border border-blue-100 animate-in fade-in">{f.name}</span>
                     ))}
                   </div>
                 </div>
 
-                <div className="bg-indigo-50 p-6 rounded-[24px] border border-indigo-100">
-                  <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2 ml-2">Adjust Final Fee ($)</label>
+                <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-8 rounded-[2rem] border border-indigo-100 shadow-inner">
+                  <label className="block text-[9px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-4 ml-2">Invoiced Fee (USD)</label>
                   <div className="relative">
-                    <DollarSign className="absolute left-4 top-3.5 w-6 h-6 text-indigo-300" />
-                    <input type="number" className="w-full pl-12 pr-4 py-4 bg-white border border-indigo-100 rounded-[18px] font-black text-xl outline-none" value={billAmount} onChange={(e) => setBillAmount(e.target.value)} />
+                    <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 w-8 h-8 text-indigo-300" />
+                    <input type="number" className="w-full pl-16 pr-6 py-6 bg-white border border-indigo-100 rounded-[1.5rem] font-black text-3xl outline-none focus:ring-4 focus:ring-indigo-100 transition-all" value={billAmount} onChange={(e) => setBillAmount(e.target.value)} />
                   </div>
                 </div>
               </div>
 
-              <button onClick={handleSubmitSolution} disabled={uploading || isAiGenerating} className="w-full bg-slate-900 text-white py-5 rounded-[24px] font-black text-lg shadow-2xl hover:bg-indigo-600 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
-                {uploading ? <Loader2 className="animate-spin" /> : <><CheckCircle className="w-6 h-6" /> SUBMIT WORK</>}
+              <button onClick={handleSubmitSolution} disabled={uploading} className="w-full bg-slate-900 text-white py-6 rounded-[2rem] font-black text-lg shadow-2xl shadow-indigo-100 hover:bg-blue-600 active:scale-95 transition-all flex items-center justify-center gap-4 group uppercase tracking-[0.2em] disabled:opacity-50">
+                {uploading ? <Loader2 className="animate-spin w-6 h-6" /> : <><CheckCircle className="w-7 h-7 transition-transform group-hover:scale-110" /> Finalize Dispatch</>}
               </button>
             </div>
           </div>

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Profile, ProjectCategory } from '../types';
+import { Profile } from '../types';
 import Sidebar from '../components/Sidebar';
 import AIServices from './AIServices';
 import WebApps from './WebApps';
@@ -9,7 +9,7 @@ import Billing from './Billing';
 import AdminOverview from './AdminOverview';
 import ProfileSettings from './ProfileSettings';
 import ProjectHistory from './ProjectHistory';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Bell, User } from 'lucide-react';
 
 interface DashboardProps {
   userProfile: Profile | null;
@@ -35,43 +35,55 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-50">
+    <div className="min-h-screen flex bg-[#f8fafc]">
       {/* Sidebar - Desktop */}
-      <div className="hidden md:block w-72 h-screen sticky top-0 border-r border-slate-200 bg-white">
+      <div className="hidden md:block w-72 h-screen sticky top-0 z-50 shadow-[1px_0_0_0_rgba(0,0,0,0.05)]">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} role={userProfile?.role || 'customer'} />
       </div>
 
       {/* Mobile Sidebar */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden bg-white">
-          <div className="flex justify-end p-4">
-            <button onClick={() => setMobileMenuOpen(false)}><X className="w-8 h-8" /></button>
+        <div className="fixed inset-0 z-[100] bg-white animate-in slide-in-from-left duration-300">
+          <div className="flex justify-end p-6">
+            <button onClick={() => setMobileMenuOpen(false)} className="p-2 bg-slate-100 rounded-full">
+              <X className="w-6 h-6 text-slate-600" />
+            </button>
           </div>
           <Sidebar activeTab={activeTab} setActiveTab={(tab) => { setActiveTab(tab); setMobileMenuOpen(false); }} role={userProfile?.role || 'customer'} />
         </div>
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-auto">
-        <header className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-6 sticky top-0 z-40">
-          <div className="flex items-center gap-4">
-            <button className="md:hidden" onClick={() => setMobileMenuOpen(true)}>
-              <Menu className="w-6 h-6" />
+      <main className="flex-1 min-w-0">
+        <header className="h-20 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 md:px-10 sticky top-0 z-40">
+          <div className="flex items-center gap-6">
+            <button className="md:hidden p-2 bg-slate-50 rounded-lg" onClick={() => setMobileMenuOpen(true)}>
+              <Menu className="w-5 h-5 text-slate-600" />
             </button>
-            <h2 className="font-bold text-xl text-slate-800">{activeTab}</h2>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-bold text-slate-900">{userProfile?.email}</p>
-              <p className="text-xs text-slate-500 capitalize">{userProfile?.role}</p>
+            <div className="flex flex-col">
+              <h2 className="font-black text-xl text-slate-900 tracking-tight">{activeTab}</h2>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">System Live</span>
+              </div>
             </div>
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center border-2 border-white shadow-sm">
-              <span className="text-blue-700 font-bold uppercase">{userProfile?.email?.charAt(0)}</span>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex flex-col items-end mr-2">
+              <p className="text-sm font-black text-slate-900 leading-none mb-1">{userProfile?.email?.split('@')[0]}</p>
+              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{userProfile?.role}</p>
+            </div>
+            <div className="relative group">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center border-2 border-white shadow-lg shadow-blue-100 transform transition-transform group-hover:scale-105">
+                <span className="text-white font-black uppercase text-sm">{userProfile?.email?.charAt(0)}</span>
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></div>
             </div>
           </div>
         </header>
 
-        <div className="p-4 md:p-8 max-w-7xl mx-auto">
+        <div className="p-6 md:p-12 max-w-[1600px] mx-auto page-enter">
           {renderContent()}
         </div>
       </main>
