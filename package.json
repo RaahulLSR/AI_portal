@@ -10,9 +10,7 @@
   },
   "dependencies": {
     "nodemailer": "^6.9.13",
-    "@vercel/node": "^3.0.24"
-  },
-  "devDependencies": {
+    "@vercel/node": "^3.0.24",
     "vite": "^5.4.2",
     "typescript": "^5.5.4",
     "@vitejs/plugin-react": "^4.3.1",
