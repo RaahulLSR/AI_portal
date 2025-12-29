@@ -42,10 +42,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, role }) => {
   return (
     <div className="flex flex-col h-full bg-white border-r border-slate-200">
       <div className="p-8 pb-10 flex items-center gap-3">
-        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-200 transition-transform hover:scale-105">N</div>
+        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center italic justify-center text-white font-black text-xl shadow-lg shadow-blue-200 transition-transform hover:scale-105">N</div>
         <div>
-          <h1 className="text-xl font-black tracking-tight text-slate-900 leading-none">Nexus</h1>
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mt-1 block">Enterprise</span>
+          <h1 className="text-xl font-black tracking-tight italic text-slate-900 leading-none">Nexus</h1>
+          <span className="text-[10px] font-semibold italic tracking-[0.15em] text-slate-500 mt-1 block">
+  Product of LSR
+</span>
+
+
         </div>
       </div>
 
