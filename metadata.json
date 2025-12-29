@@ -1,0 +1,7 @@
+{
+  "name": "Nexus AI Admin & Customer Hub",
+  "description": "A comprehensive multi-user platform for managing AI services, web development projects, and automated billing with Supabase integration.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
