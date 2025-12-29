@@ -15,21 +15,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // 1. Validate environment variables
   if (!adminEmail || !appPassword) {
-    console.error('[System] Environment variables GMAIL_USER or GMAIL_APP_PASSWORD are not set.');
+    console.error('[System] CRITICAL: GMAIL_USER or GMAIL_APP_PASSWORD not configured in Vercel.');
     return res.status(500).json({ 
-      error: 'Mail configuration missing.', 
-      details: 'The server is missing GMAIL_USER or GMAIL_APP_PASSWORD environment variables.' 
+      error: 'Mail server configuration missing.', 
+      details: 'Check GMAIL_USER and GMAIL_APP_PASSWORD env vars.' 
     });
   }
 
-  // 2. Resolve final recipient
-  const recipient = to === 'admin' ? adminEmail : to;
-  if (!recipient) {
-    return res.status(400).json({ error: 'Missing recipient email address.' });
+  // 2. Resolve the Receiving Mail ID
+  let recipient = '';
+  if (to === 'admin') {
+    recipient = adminEmail;
+    console.log('[Mail] Routing to System Admin:', recipient);
+  } else if (to && typeof to === 'string' && to.includes('@')) {
+    recipient = to;
+    console.log('[Mail] Routing to Customer Address:', recipient);
+  } else {
+    console.error('[Mail] ERROR: No valid receiving email provided in request body:', { to });
+    return res.status(400).json({ 
+      error: 'Invalid recipient.', 
+      details: 'The field "to" must be "admin" or a valid email address.' 
+    });
   }
 
-  // 3. Create Transporter using 'service' shortcut
-  // 'service: gmail' is generally more reliable than manual host/port settings in Vercel
+  // 3. Create Transporter
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -38,7 +47,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     },
   });
 
-  // 4. Construct Mail
   const mailOptions = {
     from: `"Nexus Hub" <${adminEmail}>`,
     to: recipient,
@@ -47,33 +55,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   try {
-    console.log(`[Mail] Attempting delivery to: ${recipient}`);
-    
-    // We attempt send directly. Nodemailer will catch auth/connection errors here.
     const info = await transporter.sendMail(mailOptions);
-    
-    console.log(`[Mail] Success: ${info.messageId}`);
+    console.log(`[Mail] Success! ID: ${info.messageId} -> ${recipient}`);
     
     return res.status(200).json({ 
       success: true, 
-      message: 'Email delivered.',
+      recipient: recipient,
       messageId: info.messageId 
     });
   } catch (error: any) {
-    // 5. Detailed Error Extraction
-    console.error('[Mail] SMTP Error:', error);
-
-    // Provide specific feedback for common Gmail errors
-    let userFriendlyError = 'Failed to send notification.';
-    if (error.code === 'EAUTH') {
-      userFriendlyError = 'SMTP Authentication failed. Check your App Password.';
-    } else if (error.code === 'ESOCKET') {
-      userFriendlyError = 'Connection to Gmail was blocked by the network.';
-    }
-
+    console.error('[Mail] SMTP Failure:', error.message);
     return res.status(500).json({ 
       success: false,
-      error: userFriendlyError,
+      error: 'SMTP Transmission Error',
       raw_error: error.message,
       smtp_code: error.code
     });

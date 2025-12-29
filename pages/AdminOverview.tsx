@@ -3,38 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { Project, Profile } from '../types';
 import { 
-  Briefcase, 
-  Clock, 
-  Users, 
-  Search, 
-  MessageSquare, 
-  DollarSign, 
-  Eye,
-  CheckCircle,
-  RotateCcw,
-  UserPlus,
-  UserMinus,
-  Paperclip,
-  Download,
-  Upload,
-  X,
-  Loader2,
-  History,
-  ClipboardList,
-  RefreshCw,
-  User as UserIcon,
-  Sparkles,
-  FileText,
-  Tag,
-  ShieldAlert,
-  AlertTriangle,
-  ExternalLink,
-  Layers,
-  Building,
-  Info,
-  Archive,
-  Mail,
-  Phone
+  Briefcase, Clock, Users, Search, MessageSquare, DollarSign, Eye,
+  CheckCircle, RotateCcw, UserPlus, UserMinus, Paperclip, Download,
+  Upload, X, Loader2, History, ClipboardList, RefreshCw, User as UserIcon,
+  Sparkles, FileText, Tag, ShieldAlert, AlertTriangle, ExternalLink,
+  Layers, Building, Info, Archive, Mail, Phone
 } from 'lucide-react';
 import { AttachmentGrid } from './AIServices';
 import { sendEmailNotification } from '../lib/notifications';
@@ -57,6 +30,7 @@ const AdminOverview: React.FC = () => {
 
   const fetchData = async () => {
     setLoading(true);
+    // Fetch projects with the profiles join to get the customer email
     const { data: proj } = await supabase.from('projects').select('*, profiles(*)').order('created_at', { ascending: false });
     const { data: cust } = await supabase.from('profiles').select('*').order('email', { ascending: true });
     setProjects(proj || []);
@@ -78,6 +52,14 @@ const AdminOverview: React.FC = () => {
     if (!selectedProject) return;
     setUploading(true);
     try {
+      // 1. Gather Customer Recipient Email from Profile Join
+      const customerProfile = selectedProject.profiles;
+      const customerEmail = customerProfile?.contact_email || customerProfile?.email;
+
+      if (!customerEmail) {
+        console.warn('[Nexus] Warning: Could not resolve a recipient email for this customer profile.', customerProfile);
+      }
+
       const solutionPaths = await handleFileUpload(tempAttachments);
       const existingAttachments = selectedProject.admin_attachments || [];
       const finalAttachments = [...existingAttachments, ...solutionPaths];
@@ -92,14 +74,19 @@ const AdminOverview: React.FC = () => {
 
       if (error) throw error;
 
-      // Notify Customer
-      const customerEmail = selectedProject.profiles?.contact_email || selectedProject.profiles?.email;
+      // 2. Notify Customer if email exists
       if (customerEmail) {
-        await sendEmailNotification(
+        const notifyResult = await sendEmailNotification(
           customerEmail,
-          `Order Update: Build Dispatch #${selectedProject.project_number}`,
-          `Hello, your order for project #${selectedProject.project_number} has been finalized and dispatched by our experts.\n\nPlease log in to your Nexus Dashboard to review the deliverables and settle the invoice.\n\nExpert Comments: ${adminResponse}`
+          `Order Ready: Build Dispatch #${selectedProject.project_number}`,
+          `Hello, your order for project #${selectedProject.project_number} has been finalized.\n\nExpert Comments: ${adminResponse}`
         );
+        
+        if (!notifyResult.success) {
+          alert(`Success: Solution saved, but customer email notification failed: ${notifyResult.error}`);
+        }
+      } else {
+        alert("Success: Solution saved, but no email was sent (Customer has no email recorded in profile).");
       }
 
       setSelectedProject(null); setBillAmount(''); setAdminResponse(''); setTempAttachments([]); fetchData();
