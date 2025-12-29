@@ -9,6 +9,7 @@ import {
   User, Sparkles, AlertTriangle
 } from 'lucide-react';
 import { AttachmentGrid } from './AIServices';
+import { sendEmailNotification } from '../lib/notifications';
 
 const WebApps: React.FC<{ role: UserRole }> = ({ role }) => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -57,10 +58,21 @@ const WebApps: React.FC<{ role: UserRole }> = ({ role }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Session expired.");
       const uploadedPaths = await handleFileUpload(tempAttachments);
-      const { error } = await supabase.from('projects').insert({
+      const { data, error } = await supabase.from('projects').insert({
         customer_id: user?.id, category: 'Websites & Apps', project_name: name, description: desc, status: 'Pending', attachments: uploadedPaths
-      });
+      }).select().single();
+
       if (error) throw error;
+
+      // Notify Admin
+      if (data) {
+        await sendEmailNotification(
+          'admin',
+          `NEW WEB/APP PROJECT: #${data.project_number}`,
+          `A new Software project "${name}" has been launched by ${user.email}.\n\nFunctional Brief: ${desc}`
+        );
+      }
+
       setShowForm(false); fetchProjects(); setName(''); setDesc(''); setTempAttachments([]);
     } catch (err: any) { alert(err.message); } finally { setSubmitting(false); }
   };

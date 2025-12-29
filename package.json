@@ -12,7 +12,9 @@
     "@supabase/supabase-js": "2.48.1",
     "lucide-react": "0.474.0",
     "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "react-dom": "^19.2.3",
+    "nodemailer": "^7.0.12",
+    "@vercel/node": "^5.5.16"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

@@ -9,6 +9,7 @@ import {
   FileText, History, 
   User, Tag, AlertTriangle, ArrowUpRight
 } from 'lucide-react';
+import { sendEmailNotification } from '../lib/notifications';
 
 interface AIServicesProps {
   role: UserRole;
@@ -96,10 +97,21 @@ const AIServices: React.FC<AIServicesProps> = ({ role }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Session expired.");
       const uploadedPaths = await handleFileUpload(tempAttachments);
-      const { error } = await supabase.from('projects').insert({
+      const { data, error } = await supabase.from('projects').insert({
         customer_id: user.id, category: 'AI Services', project_name: projectName, description, status: 'Pending', attachments: uploadedPaths
-      });
+      }).select().single();
+      
       if (error) throw error;
+
+      // Notify Admin
+      if (data) {
+        await sendEmailNotification(
+          'admin',
+          `NEW PROJECT ALERT: #${data.project_number}`,
+          `A new AI Service brief "${projectName}" has been launched by ${user.email}.\n\nDescription: ${description}`
+        );
+      }
+
       setShowForm(false); fetchProjects(); setProjectName(''); setDescription(''); setTempAttachments([]);
     } catch (err: any) { alert(err.message); } finally { setSubmitting(false); }
   };

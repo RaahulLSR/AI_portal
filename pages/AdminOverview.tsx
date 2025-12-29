@@ -37,6 +37,7 @@ import {
   Phone
 } from 'lucide-react';
 import { AttachmentGrid } from './AIServices';
+import { sendEmailNotification } from '../lib/notifications';
 
 const AdminOverview: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -80,6 +81,7 @@ const AdminOverview: React.FC = () => {
       const solutionPaths = await handleFileUpload(tempAttachments);
       const existingAttachments = selectedProject.admin_attachments || [];
       const finalAttachments = [...existingAttachments, ...solutionPaths];
+      
       const { error } = await supabase.from('projects').update({
         admin_response: adminResponse,
         bill_amount: parseFloat(billAmount) || 0,
@@ -87,7 +89,19 @@ const AdminOverview: React.FC = () => {
         admin_attachments: finalAttachments,
         rework_feedback: null
       }).eq('id', selectedProject.id);
+
       if (error) throw error;
+
+      // Notify Customer
+      const customerEmail = selectedProject.profiles?.contact_email || selectedProject.profiles?.email;
+      if (customerEmail) {
+        await sendEmailNotification(
+          customerEmail,
+          `Order Update: Build Dispatch #${selectedProject.project_number}`,
+          `Hello, your order for project #${selectedProject.project_number} has been finalized and dispatched by our experts.\n\nPlease log in to your Nexus Dashboard to review the deliverables and settle the invoice.\n\nExpert Comments: ${adminResponse}`
+        );
+      }
+
       setSelectedProject(null); setBillAmount(''); setAdminResponse(''); setTempAttachments([]); fetchData();
     } catch (err: any) { alert(err.message); } finally { setUploading(false); }
   };
@@ -320,7 +334,7 @@ const AdminOverview: React.FC = () => {
                   <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm opacity-60 hover:opacity-100 transition-opacity">
                     <div className="flex items-center gap-3 mb-8 text-slate-300">
                       <History className="w-5 h-5" />
-                      <h4 className="text-xs font-black uppercase tracking-[0.2em]">Previous Iteration Delivery</h4>
+                      <h4 className="text-xs font-black uppercase tracking-0.2em">Previous Iteration Delivery</h4>
                     </div>
                     <div className="space-y-6">
                       <p className="text-slate-500 font-bold text-lg bg-slate-50/50 p-8 rounded-[1.75rem] border border-slate-50 italic">{selectedProject.admin_response}</p>
