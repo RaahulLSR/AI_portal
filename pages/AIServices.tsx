@@ -103,18 +103,13 @@ const AIServices: React.FC<AIServicesProps> = ({ role }) => {
       
       if (error) throw error;
 
-      // Notify Admin
+      // Notify Admin: New Order Created
       if (data) {
-        const notifyResult = await sendEmailNotification(
+        await sendEmailNotification(
           'admin',
-          `NEW PROJECT ALERT: #${data.project_number}`,
-          `A new AI Service brief "${projectName}" has been launched by ${user.email}.\n\nDescription: ${description}`
+          `NEW AI SERVICE ORDER: #${data.project_number}`,
+          `Customer ${user.email} has created a new AI Service project.\n\nProject: ${projectName}\nBrief: ${description}`
         );
-
-        if (!notifyResult.success) {
-          console.warn('[Nexus Hub] Project saved, but email notification failed:', notifyResult.error);
-          alert(`Success: Project launched, but admin notification email failed (${notifyResult.error}). Our team will still see it in the dashboard.`);
-        }
       }
 
       setShowForm(false); fetchProjects(); setProjectName(''); setDescription(''); setTempAttachments([]);
@@ -128,7 +123,22 @@ const AIServices: React.FC<AIServicesProps> = ({ role }) => {
   const handleUpdateStatus = async (projectId: string, status: string) => {
     const updateData: any = { status };
     if (status === 'Rework Requested') updateData.rework_feedback = reworkFeedback;
-    await supabase.from('projects').update(updateData).eq('id', projectId);
+    
+    const { error } = await supabase.from('projects').update(updateData).eq('id', projectId);
+    if (error) return alert(error.message);
+
+    // Notify Admin of Customer Feedback
+    const proj = projects.find(p => p.id === projectId);
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (proj && user) {
+      await sendEmailNotification(
+        'admin',
+        `UPDATE: Project #${proj.project_number} Status -> ${status}`,
+        `Customer ${user.email} has updated project #${proj.project_number} to "${status}".\n\n${status === 'Rework Requested' ? `Feedback: ${reworkFeedback}` : 'The customer has accepted the build and it is ready for billing.'}`
+      );
+    }
+
     setReworkFeedback(''); setShowReworkModal(false); setSelectedProject(null); fetchProjects();
   };
 

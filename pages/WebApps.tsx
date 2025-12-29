@@ -64,12 +64,12 @@ const WebApps: React.FC<{ role: UserRole }> = ({ role }) => {
 
       if (error) throw error;
 
-      // Notify Admin
+      // Notify Admin: New Web Project Created
       if (data) {
         await sendEmailNotification(
           'admin',
-          `NEW WEB/APP PROJECT: #${data.project_number}`,
-          `A new Software project "${name}" has been launched by ${user.email}.\n\nFunctional Brief: ${desc}`
+          `NEW WEB/APP ORDER: #${data.project_number}`,
+          `Customer ${user.email} has launched a Software project.\n\nProject: ${name}\nBrief: ${desc}`
         );
       }
 
@@ -80,7 +80,22 @@ const WebApps: React.FC<{ role: UserRole }> = ({ role }) => {
   const handleUpdateStatus = async (projectId: string, status: string) => {
     const updateData: any = { status };
     if (status === 'Rework Requested') updateData.rework_feedback = reworkFeedback;
-    await supabase.from('projects').update(updateData).eq('id', projectId);
+    
+    const { error } = await supabase.from('projects').update(updateData).eq('id', projectId);
+    if (error) return alert(error.message);
+
+    // Notify Admin
+    const proj = projects.find(p => p.id === projectId);
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (proj && user) {
+      await sendEmailNotification(
+        'admin',
+        `UPDATE: Software Project #${proj.project_number} -> ${status}`,
+        `Customer ${user.email} updated project #${proj.project_number} to "${status}".\n\n${status === 'Rework Requested' ? `Changes: ${reworkFeedback}` : 'The customer approved the software build.'}`
+      );
+    }
+
     setReworkFeedback(''); setShowReworkModal(false); setSelectedProject(null); fetchProjects();
   };
 

@@ -67,12 +67,12 @@ const Automations: React.FC<{ role: UserRole }> = ({ role }) => {
 
       if (error) throw error;
 
-      // Notify Admin
+      // Notify Admin: New Automation Created
       if (data) {
         await sendEmailNotification(
           'admin',
-          `NEW AUTOMATION BRIEF: #${data.project_number}`,
-          `A new Automation process "${name}" has been launched by ${user.email}.\n\nLogic Brief: ${desc}`
+          `NEW AUTOMATION ORDER: #${data.project_number}`,
+          `Customer ${user.email} has requested a new Automation.\n\nFlow: ${name}\nLogic Brief: ${desc}`
         );
       }
 
@@ -85,7 +85,21 @@ const Automations: React.FC<{ role: UserRole }> = ({ role }) => {
   };
 
   const handleUpdateStatus = async (projectId: string, status: string) => {
-    await supabase.from('projects').update({ status }).eq('id', projectId);
+    const { error } = await supabase.from('projects').update({ status }).eq('id', projectId);
+    if (error) return alert(error.message);
+
+    // Notify Admin
+    const proj = projects.find(p => p.id === projectId);
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (proj && user) {
+      await sendEmailNotification(
+        'admin',
+        `UPDATE: Automation #${proj.project_number} -> ${status}`,
+        `Customer ${user.email} updated automation #${proj.project_number} to "${status}".`
+      );
+    }
+
     fetchProjects();
     setSelectedProject(null);
   };

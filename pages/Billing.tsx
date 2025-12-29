@@ -17,6 +17,7 @@ import {
   Receipt,
   Loader2
 } from 'lucide-react';
+import { sendEmailNotification } from '../lib/notifications';
 
 interface BillingProps {
   userProfile: Profile | null;
@@ -75,6 +76,9 @@ const Billing: React.FC<BillingProps> = ({ userProfile }) => {
 
     setUploading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Auth session expired.");
+
       const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
       const fileName = `${Date.now()}-${cleanName}`;
       
@@ -100,13 +104,20 @@ const Billing: React.FC<BillingProps> = ({ userProfile }) => {
 
       if (paymentError) throw paymentError;
 
+      // Notify Admin of Payment Proof
+      await sendEmailNotification(
+        'admin',
+        `PAYMENT ALERT: Settlement Proof Uploaded ($${amount})`,
+        `Customer ${user.email} has uploaded a proof of payment for the following projects: ${projectIds.map(id => projects.find(p => p.id === id)?.project_number).join(', ')}.\n\nTotal Amount: $${amount}\nStatus: Pending Verification`
+      );
+
       setShowPayModal(false);
       setSelectedProject(null);
       setSelectedForBulk([]);
       fetchData();
     } catch (err: any) {
       console.error('Payment upload error:', err);
-      alert(`Payment verification failed: ${err.message}. Please ensure the 'payment-proofs' bucket exists and RLS allows inserts.`);
+      alert(`Payment verification failed: ${err.message}.`);
     } finally {
       setUploading(false);
     }
