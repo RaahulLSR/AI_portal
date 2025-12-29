@@ -33,7 +33,7 @@ const Billing: React.FC<BillingProps> = ({ userProfile }) => {
   const [selectedForBulk, setSelectedForBulk] = useState<string[]>([]);
 
   const isAdmin = userProfile?.role === 'admin';
-  const qrCodeUrl = "https://wibenyzdzvpvwjpecmne.supabase.co/storage/v1/object/public/attachments/WhatsApp%20Image%202025-12-29%20at%203.57.20%20PM.jpeg";
+  const qrCodeUrl = "https://ewgzwwumjimlrimiavld.supabase.co/storage/v1/object/public/payment-proofs/WhatsApp%20Image%202025-12-29%20at%203.57.20%20PM.jpeg";
 
   useEffect(() => {
     fetchData();
