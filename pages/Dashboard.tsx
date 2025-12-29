@@ -1,15 +1,15 @@
 
 import React, { useState } from 'react';
-import { Profile } from '../types';
-import Sidebar from '../components/Sidebar';
-import AIServices from './AIServices';
-import WebApps from './WebApps';
-import Automations from './Automations';
-import Billing from './Billing';
-import AdminOverview from './AdminOverview';
-import ProfileSettings from './ProfileSettings';
-import ProjectHistory from './ProjectHistory';
-import { Menu, X, Bell, User } from 'lucide-react';
+import { Profile } from '../types.ts';
+import Sidebar from '../components/Sidebar.tsx';
+import AIServices from './AIServices.tsx';
+import WebApps from './WebApps.tsx';
+import Automations from './Automations.tsx';
+import Billing from './Billing.tsx';
+import AdminOverview from './AdminOverview.tsx';
+import ProfileSettings from './ProfileSettings.tsx';
+import ProjectHistory from './ProjectHistory.tsx';
+import { Menu, X } from 'lucide-react';
 
 interface DashboardProps {
   userProfile: Profile | null;

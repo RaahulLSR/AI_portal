@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from './supabase';
-import { Profile } from './types';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
+import { supabase } from './supabase.ts';
+import { Profile } from './types.ts';
+import Login from './pages/Login.tsx';
+import Dashboard from './pages/Dashboard.tsx';
 import { Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -12,14 +12,12 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) fetchProfile(session.user.id);
       else setLoading(false);
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) fetchProfile(session.user.id);
