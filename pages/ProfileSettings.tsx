@@ -2,13 +2,15 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabase';
 import { Profile } from '../types';
-import { User, Save, Upload, FileText, Image as ImageIcon, Loader2, Paperclip, X } from 'lucide-react';
+import { User, Save, Upload, FileText, Image as ImageIcon, Loader2, Paperclip, X, Mail, Phone } from 'lucide-react';
 import { AttachmentGrid } from './AIServices';
 
 const ProfileSettings: React.FC<{ profile: Profile | null }> = ({ profile }) => {
   const [brandName, setBrandName] = useState(profile?.brand_name || '');
   const [tagline, setTagline] = useState(profile?.tagline || '');
   const [desc, setDesc] = useState(profile?.description || '');
+  const [contactEmail, setContactEmail] = useState(profile?.contact_email || '');
+  const [phone, setPhone] = useState(profile?.phone_number || '');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [brandAssets, setBrandAssets] = useState<string[]>(profile?.brand_assets || []);
@@ -19,6 +21,8 @@ const ProfileSettings: React.FC<{ profile: Profile | null }> = ({ profile }) => 
       brand_name: brandName,
       tagline: tagline,
       description: desc,
+      contact_email: contactEmail,
+      phone_number: phone,
       brand_assets: brandAssets
     }).eq('id', profile?.id);
     
@@ -82,23 +86,33 @@ const ProfileSettings: React.FC<{ profile: Profile | null }> = ({ profile }) => 
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Brand Name</label>
             <input value={brandName} onChange={e => setBrandName(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 font-bold" placeholder="e.g. Nexus Apparel" />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Tagline</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Primary Tagline</label>
             <input value={tagline} onChange={e => setTagline(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 font-medium" placeholder="e.g. Future of Fashion" />
           </div>
+          
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2"><Mail className="w-3 h-3" /> Contact Email ID</label>
+            <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 font-bold" placeholder="contact@yourbrand.com" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2"><Phone className="w-3 h-3" /> Phone Number</label>
+            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 font-bold" placeholder="+1 (555) 000-0000" />
+          </div>
+
           <div className="md:col-span-2 space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Brand Description</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Brand Narrative</label>
             <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={4} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 font-medium" placeholder="Core brand values, style guides, or history..." />
           </div>
         </div>
         
         <button onClick={handleSave} disabled={loading} className="w-full bg-slate-900 text-white px-8 py-5 rounded-2xl font-black flex items-center justify-center gap-3 shadow-2xl hover:bg-slate-800 transition-all uppercase tracking-widest text-sm">
-          {loading ? <Loader2 className="animate-spin" /> : <><Save className="w-5 h-5" /> Save Brand Profile</>}
+          {loading ? <Loader2 className="animate-spin" /> : <><Save className="w-5 h-5" /> Update Brand Identity</>}
         </button>
       </div>
 
@@ -120,7 +134,7 @@ const ProfileSettings: React.FC<{ profile: Profile | null }> = ({ profile }) => 
           </label>
 
           <div className="space-y-4">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Your Brand Vault Assets</h4>
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Current Vault Assets</h4>
             {brandAssets.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {brandAssets.map((asset, i) => (

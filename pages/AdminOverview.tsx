@@ -29,7 +29,12 @@ import {
   ShieldAlert,
   AlertTriangle,
   ExternalLink,
-  Layers
+  Layers,
+  Building,
+  Info,
+  Archive,
+  Mail,
+  Phone
 } from 'lucide-react';
 import { AttachmentGrid } from './AIServices';
 
@@ -38,9 +43,10 @@ const AdminOverview: React.FC = () => {
   const [customers, setCustomers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
-  const [activeSubTab, setActiveSubTab] = useState<'projects' | 'users'>('projects');
+  const [activeSubTab, setActiveSubTab] = useState<'projects' | 'users' | 'completed'>('projects');
   
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedBrandProfile, setSelectedBrandProfile] = useState<Profile | null>(null);
   const [billAmount, setBillAmount] = useState<string>('');
   const [adminResponse, setAdminResponse] = useState('');
   const [tempAttachments, setTempAttachments] = useState<File[]>([]);
@@ -92,12 +98,31 @@ const AdminOverview: React.FC = () => {
     fetchData();
   };
 
-  const filteredProjects = projects.filter(p => 
-    p.project_number.includes(filter) || 
-    p.profiles?.brand_name?.toLowerCase().includes(filter.toLowerCase()) ||
-    p.category.toLowerCase().includes(filter.toLowerCase()) ||
-    p.profiles?.email.toLowerCase().includes(filter.toLowerCase())
-  );
+  const filteredItems = () => {
+    if (activeSubTab === 'users') {
+      return customers.filter(c => 
+        c.email.toLowerCase().includes(filter.toLowerCase()) || 
+        c.brand_name?.toLowerCase().includes(filter.toLowerCase())
+      );
+    }
+    
+    const relevantProjects = projects.filter(p => {
+      if (activeSubTab === 'projects') {
+        return !['Completed', 'Paid'].includes(p.status);
+      } else {
+        return ['Completed', 'Paid'].includes(p.status);
+      }
+    });
+
+    return relevantProjects.filter(p => 
+      p.project_number.includes(filter) || 
+      p.profiles?.brand_name?.toLowerCase().includes(filter.toLowerCase()) ||
+      p.category.toLowerCase().includes(filter.toLowerCase()) ||
+      p.profiles?.email.toLowerCase().includes(filter.toLowerCase())
+    );
+  };
+
+  const items = filteredItems();
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
@@ -118,38 +143,55 @@ const AdminOverview: React.FC = () => {
         ))}
       </div>
 
-      <div className="flex p-1 bg-slate-100/50 rounded-2xl w-fit">
+      <div className="flex flex-wrap p-1 bg-slate-100/50 rounded-2xl w-fit gap-1">
         <button onClick={() => setActiveSubTab('projects')} className={`px-8 py-3 rounded-[0.9rem] font-black text-xs uppercase tracking-widest transition-all ${activeSubTab === 'projects' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Operations Feed</button>
+        <button onClick={() => setActiveSubTab('completed')} className={`px-8 py-3 rounded-[0.9rem] font-black text-xs uppercase tracking-widest transition-all ${activeSubTab === 'completed' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Archive Vault</button>
         <button onClick={() => setActiveSubTab('users')} className={`px-8 py-3 rounded-[0.9rem] font-black text-xs uppercase tracking-widest transition-all ${activeSubTab === 'users' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Identity MGMT</button>
       </div>
 
       <div className="bg-white rounded-[3rem] border border-slate-100 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.03)] overflow-hidden">
         <div className="p-10 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <h3 className="text-2xl font-black text-slate-900 tracking-tight">{activeSubTab === 'projects' ? 'System Order Stream' : 'Authorized Personnel'}</h3>
+          <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+            {activeSubTab === 'projects' ? 'Active System Stream' : activeSubTab === 'completed' ? 'Settled Records' : 'Authorized Personnel'}
+          </h3>
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
-            <input type="text" placeholder="Filter global state..." className="pl-12 pr-6 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm w-full md:w-80 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white transition-all font-medium" value={filter} onChange={(e) => setFilter(e.target.value)} />
+            <input type="text" placeholder="Filter current view..." className="pl-12 pr-6 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm w-full md:w-80 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white transition-all font-medium" value={filter} onChange={(e) => setFilter(e.target.value)} />
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          {activeSubTab === 'projects' ? (
+          {activeSubTab === 'projects' || activeSubTab === 'completed' ? (
             <table className="w-full text-left">
               <thead className="bg-slate-50/50 text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">
                 <tr><th className="px-10 py-5">Reference ID</th><th className="px-10 py-5">Origin / Brand</th><th className="px-10 py-5">Process State</th><th className="px-10 py-5 text-right">Actions</th></tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filteredProjects.map(p => (
+                {(items as Project[]).map(p => (
                   <tr key={p.id} className="hover:bg-slate-50/50 transition-all group">
                     <td className="px-10 py-8 font-black text-slate-900 text-sm">#{p.project_number}</td>
                     <td className="px-10 py-8">
-                      <div className="font-bold text-slate-800 text-sm leading-none mb-1">{p.profiles?.brand_name || 'Individual'}</div>
-                      <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{p.profiles?.email}</div>
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <div className="font-bold text-slate-800 text-sm leading-none mb-1">{p.profiles?.brand_name || 'Individual'}</div>
+                          <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{p.profiles?.email}</div>
+                        </div>
+                        {p.profiles && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setSelectedBrandProfile(p.profiles || null); }}
+                            className="p-2 bg-slate-100 rounded-xl text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-all"
+                            title="View Brand Profile"
+                          >
+                            <Building className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td className="px-10 py-8">
                       <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
                         p.status === 'Rework Requested' ? 'bg-amber-100 text-amber-600 shadow-sm shadow-amber-50' : 
                         p.status === 'Customer Review' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' :
+                        p.status === 'Completed' || p.status === 'Paid' ? 'bg-emerald-100 text-emerald-600' :
                         'bg-slate-100 text-slate-400'
                       }`}>
                         {p.status}
@@ -168,11 +210,19 @@ const AdminOverview: React.FC = () => {
                 <tr><th className="px-10 py-5">User Identity</th><th className="px-10 py-5">Access Level</th><th className="px-10 py-5 text-right">Privileges</th></tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {customers.map(u => (
+                {(items as Profile[]).map(u => (
                   <tr key={u.id} className="hover:bg-slate-50 transition-all">
-                    <td className="px-10 py-8"><div className="font-black text-slate-900">{u.email}</div></td>
+                    <td className="px-10 py-8">
+                      <div className="font-black text-slate-900">{u.brand_name || u.email}</div>
+                      <div className="text-[10px] text-slate-400 font-bold">{u.email}</div>
+                    </td>
                     <td className="px-10 py-8"><span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${u.role === 'admin' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-slate-100 text-slate-500'}`}>{u.role}</span></td>
-                    <td className="px-10 py-8 text-right"><button onClick={() => handleToggleRole(u.id, u.role)} className="text-[9px] font-black uppercase text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-xl transition-all tracking-widest">Update Permissions</button></td>
+                    <td className="px-10 py-8 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => setSelectedBrandProfile(u)} className="p-2 bg-slate-50 rounded-xl text-slate-400 hover:text-blue-600 transition-all"><Building className="w-4 h-4" /></button>
+                        <button onClick={() => handleToggleRole(u.id, u.role)} className="text-[9px] font-black uppercase text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-xl transition-all tracking-widest">Update Permissions</button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -180,6 +230,54 @@ const AdminOverview: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* BRAND PROFILE MODAL */}
+      {selectedBrandProfile && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-xl p-4 overflow-y-auto animate-in fade-in duration-300">
+          <div className="bg-white rounded-[3rem] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.3)] max-w-4xl w-full p-10 space-y-10 border border-white animate-in zoom-in-95 duration-400">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-indigo-600 text-white rounded-3xl"><Building className="w-7 h-7" /></div>
+                <div>
+                  <h3 className="text-3xl font-black text-slate-900 tracking-tight leading-none">{selectedBrandProfile.brand_name || 'Unnamed Client'}</h3>
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] mt-2">{selectedBrandProfile.email}</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedBrandProfile(null)} className="p-3 bg-slate-50 rounded-full hover:bg-slate-100 transition-all"><X className="w-7 h-7 text-slate-400" /></button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+              <div className="md:col-span-2 space-y-10">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                    <label className="flex items-center gap-2 text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1"><Mail className="w-3 h-3" /> Direct Contact</label>
+                    <p className="text-sm font-bold text-slate-900">{selectedBrandProfile.contact_email || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-2 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                    <label className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1"><Phone className="w-3 h-3" /> Secure Line</label>
+                    <p className="text-sm font-bold text-slate-900">{selectedBrandProfile.phone_number || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Tagline / Mission</label>
+                  <p className="text-xl font-black text-slate-900 italic">"{selectedBrandProfile.tagline || 'No tagline defined'}"</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Brand Narrative</label>
+                  <p className="text-slate-600 font-medium leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-100">{selectedBrandProfile.description || 'No narrative provided.'}</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Brand Vault Assets</label>
+                <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                   <AttachmentGrid paths={selectedBrandProfile.brand_assets} bucket="brand-assets" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ADMIN REVIEW MODAL */}
       {selectedProject && (
@@ -192,7 +290,15 @@ const AdminOverview: React.FC = () => {
                   <div className="p-4 bg-slate-900 text-white rounded-3xl shadow-xl"><ClipboardList className="w-6 h-6" /></div>
                   <div>
                     <h3 className="text-3xl font-black text-slate-900 tracking-tight leading-none">Operational Scope</h3>
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] mt-2">Internal Case File #{selectedProject.project_number}</p>
+                    <div className="flex items-center gap-3 mt-2">
+                      <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em]">Internal Case File #{selectedProject.project_number}</p>
+                      <button 
+                        onClick={() => setSelectedBrandProfile(selectedProject.profiles || null)}
+                        className="flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all border border-blue-100"
+                      >
+                        <Building className="w-3 h-3" /> View Client Brand
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -9,6 +9,8 @@ export interface Profile {
   tagline?: string;
   description?: string;
   brand_assets?: string[]; // Array of storage paths/URLs
+  phone_number?: string;
+  contact_email?: string;
 }
 
 export type ProjectCategory = 'AI Services' | 'Websites & Apps' | 'Automations';
