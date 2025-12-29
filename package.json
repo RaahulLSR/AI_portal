@@ -2,8 +2,22 @@
 {
   "name": "nexus-hub",
   "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "nodemailer": "^6.9.13",
     "@vercel/node": "^3.0.24"
+  },
+  "devDependencies": {
+    "vite": "^5.4.2",
+    "typescript": "^5.5.4",
+    "@vitejs/plugin-react": "^4.3.1",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/nodemailer": "^6.4.14"
   }
 }

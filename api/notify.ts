@@ -12,26 +12,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const adminEmail = process.env.GMAIL_USER;
   const appPassword = process.env.GMAIL_APP_PASSWORD;
 
-  // Debug check for environment variables (without exposing them fully)
   if (!adminEmail || !appPassword) {
-    console.error('Missing GMAIL_USER or GMAIL_APP_PASSWORD in environment variables');
+    console.error('Mail configuration missing');
     return res.status(500).json({ 
-      error: 'Server configuration error: Mail variables missing.',
+      error: 'Server configuration error: environment variables not set.',
       missing: { user: !adminEmail, pass: !appPassword }
     });
   }
 
   const recipient = to === 'admin' ? adminEmail : to;
 
-  // Explicit SMTP configuration for Gmail
+  // Most robust Gmail SMTP config for cloud providers
   const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true, // use SSL
+    secure: true, // SSL/TLS
     auth: {
       user: adminEmail,
       pass: appPassword,
     },
+    tls: {
+      rejectUnauthorized: false // Often needed for serverless environments
+    }
   });
 
   const mailOptions = {
@@ -42,9 +44,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   try {
+    await transporter.verify(); // Test connection before sending
     const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent: ' + info.response);
-    return res.status(200).json({ success: true, message: 'Notification sent successfully.' });
+    console.log('Notification successful:', info.messageId);
+    return res.status(200).json({ success: true, messageId: info.messageId });
   } catch (error: any) {
     console.error('SMTP Delivery Error:', error);
     return res.status(500).json({ 
