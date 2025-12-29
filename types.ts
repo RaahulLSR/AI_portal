@@ -22,8 +22,6 @@ export interface Project {
   status: ProjectStatus;
   project_name?: string;
   description: string;
-  
-  // AI Services specific
   spec_style_number?: string;
   spec_colors?: string;
   spec_sizes?: string;
@@ -35,7 +33,6 @@ export interface Project {
   wants_color_variations: boolean;
   wants_style_variations: boolean;
   wants_marketing_poster: boolean;
-
   admin_response?: string;
   rework_feedback?: string;
   bill_amount: number;
