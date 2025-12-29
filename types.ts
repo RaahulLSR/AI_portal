@@ -22,20 +22,17 @@ export interface Project {
   status: ProjectStatus;
   project_name?: string;
   description: string;
-  // Specific AI Services Specs
   spec_style_number?: string;
   spec_colors?: string;
   spec_sizes?: string;
   spec_apparel_type?: string;
   spec_gender?: string;
   spec_age_group?: string;
-  // Specific AI Services Wants
   wants_new_style: boolean;
   wants_tag_creation: boolean;
   wants_color_variations: boolean;
   wants_style_variations: boolean;
   wants_marketing_poster: boolean;
-  
   admin_response?: string;
   rework_feedback?: string;
   bill_amount: number;

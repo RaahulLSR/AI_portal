@@ -15,11 +15,7 @@ import {
   ChevronRight,
   TrendingUp,
   Receipt,
-  Loader2,
-  ExternalLink,
-  Info,
-  Calendar,
-  Building
+  Loader2
 } from 'lucide-react';
 
 interface BillingProps {
@@ -34,16 +30,13 @@ const Billing: React.FC<BillingProps> = ({ userProfile }) => {
   const [showPayModal, setShowPayModal] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedForBulk, setSelectedForBulk] = useState<string[]>([]);
-  
-  // Print State
-  const [printFilter, setPrintFilter] = useState<'all-pending' | string | null>(null);
 
   const isAdmin = userProfile?.role === 'admin';
   const qrCodeUrl = "https://wibenyzdzvpvwjpecmne.supabase.co/storage/v1/object/public/attachments/WhatsApp%20Image%202025-12-29%20at%203.57.20%20PM.jpeg";
 
   useEffect(() => {
     fetchData();
-  }, [userProfile]);
+  }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -51,7 +44,7 @@ const Billing: React.FC<BillingProps> = ({ userProfile }) => {
     if (!user) return;
 
     let projectQuery = supabase.from('projects')
-      .select('*, profiles(email, brand_name, tagline, description)')
+      .select('*, profiles(email, brand_name)')
       .gt('bill_amount', 0)
       .order('created_at', { ascending: false });
 
@@ -74,16 +67,6 @@ const Billing: React.FC<BillingProps> = ({ userProfile }) => {
     setPayments(paymentData || []);
 
     setLoading(false);
-  };
-
-  const handlePrint = (filter: 'all-pending' | string) => {
-    setPrintFilter(filter);
-    // Use a timeout to allow React to re-render the hidden print div with correct data
-    setTimeout(() => {
-      window.print();
-      // Reset filter after a delay so it doesn't flicker while print dialog is open
-      setTimeout(() => setPrintFilter(null), 2000);
-    }, 500);
   };
 
   const handlePaymentProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,7 +106,7 @@ const Billing: React.FC<BillingProps> = ({ userProfile }) => {
       fetchData();
     } catch (err: any) {
       console.error('Payment upload error:', err);
-      alert(`Payment verification failed: ${err.message}`);
+      alert(`Payment verification failed: ${err.message}. Please ensure the 'payment-proofs' bucket exists and RLS allows inserts.`);
     } finally {
       setUploading(false);
     }
@@ -152,252 +135,110 @@ const Billing: React.FC<BillingProps> = ({ userProfile }) => {
     );
   };
 
-  // Determine which projects to show in the printable invoice
-  const projectsToPrint = printFilter === 'all-pending' 
-    ? projects.filter(p => p.status !== 'Completed' && p.status !== 'Paid')
-    : projects.filter(p => p.id === printFilter);
-
-  // Helper to render a single invoice page
-  const renderInvoicePage = (project: Project, isBulk: boolean = false) => (
-    <div key={project.id} className="invoice-page bg-white">
-      {/* Invoice Header */}
-      <div className="flex justify-between items-start border-b-8 border-slate-900 pb-10 mb-10">
-        <div>
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-20 h-20 bg-slate-900 text-white flex items-center justify-center font-black text-4xl rounded-3xl">N</div>
-            <h1 className="text-5xl font-black uppercase tracking-tighter">Nexus Hub</h1>
-          </div>
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] mb-2">Secure Business Solutions</p>
-          <div className="space-y-1">
-             <p className="text-sm font-bold text-slate-800">Email: accounts@nexushub.ai</p>
-             <p className="text-sm font-bold text-slate-800">Date Generated: {new Date().toLocaleDateString()}</p>
-          </div>
-        </div>
-        <div className="text-right">
-          <h2 className="text-3xl font-black uppercase tracking-tight mb-4 text-slate-900">Official Invoice</h2>
-          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 inline-block">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Project Identifier</p>
-            <p className="font-mono font-black text-slate-900 text-2xl tracking-widest">#{project.project_number}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Bill To / Summary Row */}
-      <div className="grid grid-cols-2 gap-20 mb-16">
-        <div>
-          <h3 className="text-[12px] font-black text-slate-400 uppercase tracking-widest mb-6 border-b pb-2">Client Details</h3>
-          <p className="font-black text-3xl text-slate-900 mb-2">{project.profiles?.brand_name || 'Individual Client'}</p>
-          <p className="text-slate-600 font-bold text-lg mb-2">{project.profiles?.email}</p>
-          {project.profiles?.tagline && (
-            <p className="text-sm text-slate-400 italic font-medium">"{project.profiles?.tagline}"</p>
-          )}
-        </div>
-        <div className="text-right">
-          <h3 className="text-[12px] font-black text-slate-400 uppercase tracking-widest mb-6 border-b pb-2">Financial Summary</h3>
-          <div className="space-y-3">
-            <p className="text-slate-400 font-black text-xs uppercase">Total Amount Due</p>
-            <div className="text-7xl font-black text-slate-900 tracking-tighter">${project.bill_amount.toFixed(2)}</div>
-            <p className="text-[11px] font-black text-blue-600 uppercase tracking-[0.3em]">Status: {project.status}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Itemization Table */}
-      <div className="mb-16">
-        <h3 className="text-[12px] font-black text-slate-400 uppercase tracking-widest mb-6">Service Itemization</h3>
-        <table className="w-full">
-          <thead>
-            <tr className="border-b-4 border-slate-900">
-              <th className="py-6 text-left text-[12px] font-black uppercase tracking-widest text-slate-900">Category</th>
-              <th className="py-6 text-left text-[12px] font-black uppercase tracking-widest text-slate-900">Project Name</th>
-              <th className="py-6 text-right text-[12px] font-black uppercase tracking-widest text-slate-900">Amount (USD)</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y-2 divide-slate-100">
-            <tr>
-              <td className="py-8">
-                 <span className="px-4 py-1.5 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest">{project.category}</span>
-              </td>
-              <td className="py-8">
-                <p className="font-black text-2xl text-slate-900 mb-1">{project.project_name || 'Custom Request'}</p>
-                <p className="text-sm text-slate-500 font-medium">Original Submission Date: {new Date(project.created_at).toLocaleDateString()}</p>
-              </td>
-              <td className="py-8 text-right font-black text-3xl text-slate-900">${project.bill_amount.toFixed(2)}</td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr className="border-t-4 border-slate-900">
-              <td colSpan={2} className="py-10 text-right text-[12px] font-black uppercase tracking-widest text-slate-900">Grand Total Amount Due</td>
-              <td className="py-10 text-right font-black text-4xl text-slate-900">${project.bill_amount.toFixed(2)}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      {/* Payment Block */}
-      <div className="bg-slate-50 rounded-[40px] p-12 flex items-center justify-between border-2 border-slate-100 shadow-sm">
-        <div className="max-w-md">
-          <h4 className="text-[14px] font-black text-slate-900 uppercase tracking-widest mb-6">Payment Instructions</h4>
-          <p className="text-sm text-slate-500 leading-relaxed font-bold mb-8">
-            To finalize this project and release assets, please settle the outstanding balance. Scan the QR code to make your transfer, then upload the receipt in your Nexus Hub Dashboard.
-          </p>
-          <div className="flex gap-4">
-            <div className="px-6 py-3 bg-white rounded-2xl border-2 border-slate-200 text-[11px] font-black text-slate-900 tracking-[0.2em] uppercase">Transfer Required</div>
-          </div>
-        </div>
-        <div className="text-center">
-          <div className="p-4 bg-white rounded-[32px] shadow-2xl border-2 border-slate-100 mb-4">
-            <img src={qrCodeUrl} alt="Payment QR" className="w-40 h-40 object-cover rounded-2xl" />
-          </div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Scan for Secure Payment</p>
-        </div>
-      </div>
-
-      <div className="mt-20 text-center border-t border-slate-100 pt-10">
-        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em]">Nexus AI Digital Hub • No: {project.project_number}</p>
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-8">
-      {/* 
-          OFFICIAL INVOICE TEMPLATE (Hidden in UI, Visible on Print)
-      */}
-      <div className="print-only">
-        {printFilter === 'all-pending' ? (
-          projectsToPrint.map(p => renderInvoicePage(p, true))
-        ) : (
-          projectsToPrint.length > 0 && renderInvoicePage(projectsToPrint[0], false)
-        )}
-      </div>
-
-      {/* 
-          DASHBOARD UI 
-      */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 no-print">
-        <div className="bg-blue-600 rounded-3xl p-8 text-white shadow-2xl shadow-blue-200 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-            <CreditCard className="w-32 h-32" />
-          </div>
-          <div className="flex justify-between items-start mb-6 relative z-10">
-            <div className="p-3 bg-blue-500 rounded-2xl shadow-inner"><CreditCard className="w-6 h-6" /></div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-blue-600 rounded-2xl p-6 text-white shadow-xl shadow-blue-200">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-2 bg-blue-500 rounded-lg"><CreditCard className="w-6 h-6" /></div>
             <TrendingUp className="w-5 h-5 opacity-70" />
           </div>
-          <p className="text-blue-100 text-xs font-black uppercase tracking-widest">Total Pending Amount</p>
-          <h3 className="text-4xl font-black mt-2 tracking-tighter">${totalPending.toFixed(2)}</h3>
+          <p className="text-blue-100 text-sm font-medium">Total Pending Amount</p>
+          <h3 className="text-3xl font-bold mt-1">${totalPending.toFixed(2)}</h3>
         </div>
-
-        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm relative overflow-hidden group">
-          <div className="flex justify-between items-start mb-6 relative z-10">
-            <div className="p-3 bg-slate-100 rounded-2xl text-slate-600"><Receipt className="w-6 h-6" /></div>
-            <Clock className="w-5 h-5 text-amber-500 animate-pulse" />
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-2 bg-slate-100 rounded-lg"><Receipt className="w-6 h-6 text-slate-600" /></div>
           </div>
-          <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Unsettled Projects</p>
-          <h3 className="text-4xl font-black mt-2 text-slate-900 tracking-tighter">
-            {projects.filter(p => p.status !== 'Completed' && p.status !== 'Paid').length}
-          </h3>
+          <p className="text-slate-500 text-sm font-medium">Pending Bills</p>
+          <h3 className="text-3xl font-bold mt-1 text-slate-900">{projects.filter(p => p.status !== 'Completed').length}</h3>
         </div>
-
-        <div className="bg-slate-900 rounded-3xl p-8 text-white flex flex-col justify-center shadow-xl hover:bg-slate-800 transition-all cursor-pointer active:scale-95 no-print" onClick={() => handlePrint('all-pending')}>
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-white/10 rounded-2xl"><Printer className="w-8 h-8" /></div>
-            <div>
-              <p className="font-black uppercase text-xs tracking-widest opacity-70">Bulk Export</p>
-              <h4 className="text-xl font-black">Print All Pending Bills</h4>
-            </div>
-          </div>
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-center">
+          <button 
+            className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all"
+            onClick={() => window.print()}
+          >
+            <Printer className="w-5 h-5" />
+            Print All Pending Bills
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 no-print">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Project Invoices</h3>
+            <h3 className="text-xl font-bold text-slate-900">Project Invoices</h3>
             {!isAdmin && selectedForBulk.length > 0 && (
               <button 
                 onClick={() => setShowPayModal(true)}
-                className="bg-green-600 text-white px-6 py-3 rounded-2xl font-black shadow-xl hover:bg-green-700 transition-all text-sm animate-in slide-in-from-right-4"
+                className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow-lg hover:bg-green-700 transition-all text-sm"
               >
-                Pay Grouped ({selectedForBulk.length})
+                Pay Bulk ({selectedForBulk.length})
               </button>
             )}
           </div>
           
-          <div className="space-y-4">
-            {loading ? (
-              <div className="flex justify-center py-20"><Loader2 className="w-10 h-10 animate-spin text-blue-600" /></div>
-            ) : projects.length === 0 ? (
-              <div className="bg-white p-20 rounded-[40px] text-center border-2 border-dashed border-slate-100">
-                <Receipt className="w-16 h-16 text-slate-100 mx-auto mb-4" />
-                <p className="text-slate-300 font-black uppercase text-xs tracking-[0.2em]">No Billing Records Available</p>
+          <div className="space-y-3">
+            {projects.length === 0 ? (
+              <div className="bg-white p-10 rounded-2xl text-center border-2 border-dashed border-slate-100">
+                <p className="text-slate-400 font-black uppercase text-xs tracking-widest">No Billing History</p>
               </div>
             ) : projects.map(p => (
-              <div key={p.id} className="bg-white border border-slate-200 rounded-[32px] p-6 flex items-center justify-between group hover:shadow-xl hover:border-blue-100 transition-all">
-                <div className="flex items-center gap-6">
+              <div key={p.id} className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between group hover:shadow-md transition-all">
+                <div className="flex items-center gap-4">
                   {!isAdmin && p.status !== 'Completed' && (
                     <input 
                       type="checkbox" 
                       checked={selectedForBulk.includes(p.id)}
                       onChange={() => toggleBulk(p.id)}
-                      className="w-6 h-6 rounded-lg border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      className="w-5 h-5 rounded border-slate-300 text-blue-600"
                     />
                   )}
-                  <div className="p-4 bg-slate-50 rounded-2xl group-hover:bg-blue-50 transition-colors">
-                    <FileText className="w-8 h-8 text-slate-300 group-hover:text-blue-500" />
+                  <div className="p-3 bg-slate-50 rounded-xl group-hover:bg-blue-50 transition-colors">
+                    <FileText className="w-6 h-6 text-slate-400 group-hover:text-blue-500" />
                   </div>
                   <div>
-                    <h4 className="font-black text-slate-900 text-lg">#{p.project_number}</h4>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{p.category} • {p.profiles?.brand_name || 'Individual'}</p>
+                    <h4 className="font-bold text-slate-900">Project #{p.project_number}</h4>
+                    <p className="text-xs text-slate-500">{p.profiles?.brand_name || 'Personal'} • {p.category}</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-6">
                   <div className="text-right">
-                    <p className="text-2xl font-black text-slate-900 leading-none">${p.bill_amount.toFixed(2)}</p>
-                    <span className={`text-[10px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded-md ${p.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                    <p className="text-lg font-bold text-slate-900">${p.bill_amount}</p>
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${p.status === 'Completed' ? 'text-green-600' : 'text-amber-600'}`}>
                       {p.status}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  {!isAdmin && p.status !== 'Completed' && (
                     <button 
-                      title="Print Official Invoice"
-                      onClick={() => handlePrint(p.id)}
-                      className="p-3 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition-all"
+                      onClick={() => { setSelectedProject(p); setShowPayModal(true); }}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-blue-700 transition-all"
                     >
-                      <Printer className="w-5 h-5" />
+                      Pay Now
                     </button>
-                    {!isAdmin && p.status !== 'Completed' && (
-                      <button 
-                        onClick={() => { setSelectedProject(p); setShowPayModal(true); }}
-                        className="bg-slate-900 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg hover:bg-blue-600 transition-all hidden sm:block"
-                      >
-                        Settle
-                      </button>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="space-y-6 no-print">
-          <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Payment Trail</h3>
-          <div className="space-y-4">
+        <div className="space-y-4">
+          <h3 className="text-xl font-bold text-slate-900">Payment Status</h3>
+          <div className="space-y-3">
             {payments.length === 0 ? (
-              <div className="bg-white p-10 rounded-[32px] text-center border-slate-100 border">
-                <Clock className="w-10 h-10 text-slate-100 mx-auto mb-3" />
-                <p className="text-slate-300 text-[10px] font-black uppercase tracking-widest">Awaiting First Payment</p>
+              <div className="bg-white p-6 rounded-2xl text-center border-slate-100 border">
+                <p className="text-slate-400 text-[10px] font-black uppercase">No Recent Payments</p>
               </div>
             ) : payments.map(pay => (
-              <div key={pay.id} className="bg-white p-6 rounded-[32px] border border-slate-200 space-y-4 shadow-sm group">
+              <div key={pay.id} className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 shadow-sm">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">{new Date(pay.created_at).toLocaleDateString()}</p>
-                    <p className="text-2xl font-black text-slate-900">${pay.amount.toFixed(2)}</p>
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-tight">{new Date(pay.created_at).toLocaleDateString()}</p>
+                    <p className="text-lg font-bold text-slate-900">${pay.amount}</p>
                   </div>
-                  <span className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest ${
+                  <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
                     pay.status === 'Verified' ? 'bg-green-100 text-green-700' : 
                     pay.status === 'Rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
                   }`}>
@@ -409,13 +250,13 @@ const Billing: React.FC<BillingProps> = ({ userProfile }) => {
                   <div className="flex gap-2 pt-2">
                     <button 
                       onClick={() => handleVerifyPayment(pay, true)}
-                      className="flex-1 bg-green-600 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-green-700 transition-all"
+                      className="flex-1 bg-green-600 text-white py-2 rounded-lg text-xs font-bold shadow-md shadow-green-100"
                     >
                       Verify
                     </button>
                     <button 
                       onClick={() => handleVerifyPayment(pay, false)}
-                      className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-all"
+                      className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg text-xs font-bold"
                     >
                       Reject
                     </button>
@@ -427,9 +268,9 @@ const Billing: React.FC<BillingProps> = ({ userProfile }) => {
                     href={`${supabase.storage.from('payment-proofs').getPublicUrl(pay.proof_url).data.publicUrl}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-between text-[10px] text-blue-600 font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white bg-blue-50 p-3 rounded-2xl transition-all"
+                    className="flex items-center justify-between text-xs text-blue-600 font-bold hover:underline bg-blue-50 p-2 rounded-lg"
                   >
-                    View Settlement Proof <ExternalLink className="w-3.5 h-3.5" />
+                    View Proof <Download className="w-3 h-3" />
                   </a>
                 )}
               </div>
@@ -439,40 +280,30 @@ const Billing: React.FC<BillingProps> = ({ userProfile }) => {
       </div>
 
       {showPayModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 no-print">
-          <div className="bg-white rounded-[40px] shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in duration-400">
-            <div className="p-8 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="text-xl font-black uppercase tracking-tight">Secure Settlement</h3>
-              <button className="p-2 hover:bg-slate-50 rounded-full" onClick={() => { setShowPayModal(false); setSelectedProject(null); setSelectedForBulk([]); }}><X /></button>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in duration-300">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="text-xl font-bold">Secure Payment</h3>
+              <button onClick={() => { setShowPayModal(false); setSelectedProject(null); setSelectedForBulk([]); }}><X /></button>
             </div>
-            <div className="p-10 text-center space-y-8">
-              <div className="space-y-1">
-                <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">Total Balance to Pay</p>
-                <div className="text-5xl font-black text-blue-600 tracking-tighter">
-                  ${(selectedProject ? selectedProject.bill_amount : projects.filter(p => selectedForBulk.includes(p.id)).reduce((sum, p) => sum + p.bill_amount, 0)).toFixed(2)}
-                </div>
+            <div className="p-8 text-center space-y-6">
+              <p className="text-slate-600">Scan the QR code below and transfer the total amount:</p>
+              <div className="text-3xl font-black text-blue-600">
+                ${selectedProject ? selectedProject.bill_amount : projects.filter(p => selectedForBulk.includes(p.id)).reduce((sum, p) => sum + p.bill_amount, 0)}
               </div>
-
               <div className="flex justify-center">
-                <div className="p-6 bg-slate-50 rounded-[40px] border-4 border-dashed border-slate-100 relative group transition-all hover:border-blue-200">
-                  <img src={qrCodeUrl} alt="QR Code" className="w-56 h-56 object-cover rounded-3xl shadow-xl" />
-                  <div className="absolute inset-0 bg-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-[36px] flex items-center justify-center">
-                     <QrCode className="w-12 h-12 text-blue-600" />
-                  </div>
+                <div className="p-4 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 group transition-all hover:border-blue-400">
+                  <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48 object-cover rounded-xl" />
                 </div>
               </div>
-
               <div className="space-y-4">
-                <label className={`block w-full cursor-pointer bg-slate-900 text-white py-5 rounded-[28px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-2xl ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
-                  <div className="flex items-center justify-center gap-3">
-                    {uploading ? <Loader2 className="animate-spin w-5 h-5" /> : <><Upload className="w-6 h-6" /> Upload Transaction Proof</>}
+                <label className={`block w-full cursor-pointer bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-lg ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <div className="flex items-center justify-center gap-2">
+                    {uploading ? <Loader2 className="animate-spin" /> : <><Upload className="w-5 h-5" /> Upload Payment Proof</>}
                   </div>
                   <input type="file" className="hidden" onChange={handlePaymentProofUpload} accept="image/*,.pdf" disabled={uploading} />
                 </label>
-                <div className="flex items-center justify-center gap-2 text-slate-400">
-                  <Info className="w-3.5 h-3.5" />
-                  <p className="text-[9px] uppercase font-black tracking-widest">Verification required for project delivery</p>
-                </div>
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Screenshots or PDFs are accepted. Verification within 24h.</p>
               </div>
             </div>
           </div>

@@ -37,13 +37,13 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
   return (
     <div className="min-h-screen flex bg-slate-50">
       {/* Sidebar - Desktop */}
-      <div className="hidden md:block w-72 h-screen sticky top-0 border-r border-slate-200 bg-white no-print">
+      <div className="hidden md:block w-72 h-screen sticky top-0 border-r border-slate-200 bg-white">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} role={userProfile?.role || 'customer'} />
       </div>
 
       {/* Mobile Sidebar */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden bg-white no-print">
+        <div className="fixed inset-0 z-50 md:hidden bg-white">
           <div className="flex justify-end p-4">
             <button onClick={() => setMobileMenuOpen(false)}><X className="w-8 h-8" /></button>
           </div>
@@ -53,7 +53,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-auto">
-        <header className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-6 sticky top-0 z-40 no-print">
+        <header className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-6 sticky top-0 z-40">
           <div className="flex items-center gap-4">
             <button className="md:hidden" onClick={() => setMobileMenuOpen(true)}>
               <Menu className="w-6 h-6" />

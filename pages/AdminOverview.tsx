@@ -27,9 +27,7 @@ import {
   FileText,
   Tag,
   ShieldAlert,
-  AlertTriangle,
-  Shirt,
-  Info
+  AlertTriangle
 } from 'lucide-react';
 import { AttachmentGrid } from './AIServices';
 
@@ -86,7 +84,7 @@ const AdminOverview: React.FC = () => {
         bill_amount: parseFloat(billAmount) || 0,
         status: 'Customer Review',
         admin_attachments: finalAttachments,
-        rework_feedback: null 
+        rework_feedback: null // Clear feedback once solution is re-submitted
       }).eq('id', selectedProject.id);
       
       if (error) throw error;
@@ -134,7 +132,7 @@ const AdminOverview: React.FC = () => {
           <div className="text-2xl font-black">{customers.length}</div>
         </div>
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <div className="flex items-center gap-3 text-green-600 mb-2 font-medium"><DollarSign className="w-5 h-5" /> Total Billed</div>
+          <div className="flex items-center gap-3 text-green-600 mb-2 font-medium"><DollarSign className="w-5 h-5" /> Billing Projection</div>
           <div className="text-2xl font-black">${projects.reduce((sum, p) => sum + (p.bill_amount || 0), 0).toFixed(2)}</div>
         </div>
       </div>
@@ -198,6 +196,7 @@ const AdminOverview: React.FC = () => {
         </div>
       </div>
 
+      {/* ADMIN REVIEW MODAL */}
       {selectedProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="bg-white rounded-[40px] shadow-2xl max-w-7xl w-full my-8 animate-in slide-in-from-bottom-4 duration-400 overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
@@ -207,73 +206,17 @@ const AdminOverview: React.FC = () => {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3">
                   <div className="p-3 bg-blue-600 text-white rounded-2xl"><ClipboardList /></div>
-                  Project Details
+                  Project Scope
                 </h3>
               </div>
               
               <div className="space-y-8">
-                {/* Brand Identity Section */}
-                <div className="bg-white p-6 rounded-[28px] border-2 border-slate-100 shadow-sm">
-                  <div className="flex items-center gap-3 mb-4 text-slate-400">
-                    <UserIcon className="w-5 h-5" />
-                    <h4 className="text-[10px] font-black uppercase tracking-widest">Client Brand Context</h4>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-[10px] font-black uppercase text-slate-400">Brand Name</p>
-                      <p className="font-black text-slate-900">{selectedProject.profiles?.brand_name || 'Individual'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase text-slate-400">Email</p>
-                      <p className="font-black text-slate-900">{selectedProject.profiles?.email}</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t">
-                    <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Brand Assets Vault</p>
-                    <AttachmentGrid paths={selectedProject.profiles?.brand_assets} bucket="brand-assets" />
-                  </div>
-                </div>
-
-                {/* Garment Specifications (If AI Services) */}
-                {selectedProject.category === 'AI Services' && (
-                  <div className="bg-blue-600 text-white p-8 rounded-[32px] shadow-lg">
-                    <div className="flex items-center gap-3 mb-6">
-                      <Shirt className="w-6 h-6" />
-                      <h4 className="text-sm font-black uppercase tracking-widest">Garment Specifications</h4>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                      <div>
-                        <p className="text-[10px] font-black uppercase opacity-70">Style Number</p>
-                        <p className="font-black text-lg">{selectedProject.spec_style_number || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black uppercase opacity-70">Apparel Type</p>
-                        <p className="font-black text-lg">{selectedProject.spec_apparel_type || 'Custom'}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black uppercase opacity-70">Gender / Age</p>
-                        <p className="font-black text-lg">{selectedProject.spec_gender} / {selectedProject.spec_age_group}</p>
-                      </div>
-                    </div>
-                    <div className="mt-6 pt-6 border-t border-white/20">
-                      <p className="text-[10px] font-black uppercase opacity-70 mb-2">Requested Deliverables</p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedProject.wants_new_style && <span className="px-3 py-1 bg-white/20 rounded-lg text-[10px] font-bold">NEW STYLE</span>}
-                        {selectedProject.wants_tag_creation && <span className="px-3 py-1 bg-white/20 rounded-lg text-[10px] font-bold">TAG/LABEL</span>}
-                        {selectedProject.wants_color_variations && <span className="px-3 py-1 bg-white/20 rounded-lg text-[10px] font-bold">COLOR VARIANTS</span>}
-                        {selectedProject.wants_style_variations && <span className="px-3 py-1 bg-white/20 rounded-lg text-[10px] font-bold">STYLE VARIANTS</span>}
-                        {selectedProject.wants_marketing_poster && <span className="px-3 py-1 bg-white/20 rounded-lg text-[10px] font-bold">POSTER</span>}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Rework Instructions */}
+                {/* Rework Instructions (CRITICAL FOR ADMIN) */}
                 {selectedProject.status === 'Rework Requested' && selectedProject.rework_feedback && (
-                  <div className="bg-orange-600 text-white p-8 rounded-[32px] shadow-xl">
+                  <div className="bg-orange-600 text-white p-8 rounded-[32px] shadow-xl animate-bounce-short">
                     <div className="flex items-center gap-2 mb-4">
                       <AlertTriangle className="w-6 h-6" />
-                      <h4 className="text-sm font-black uppercase tracking-widest">Rework Feedback</h4>
+                      <h4 className="text-sm font-black uppercase tracking-widest">REWORK FEEDBACK FROM CLIENT</h4>
                     </div>
                     <p className="bg-white/10 p-6 rounded-2xl font-black text-lg border border-white/20 whitespace-pre-wrap">
                       {selectedProject.rework_feedback}
@@ -281,11 +224,25 @@ const AdminOverview: React.FC = () => {
                   </div>
                 )}
 
-                {/* Client Brief */}
+                {/* History Section (Previously Submitted Work) */}
+                {selectedProject.admin_response && (
+                  <div className="bg-white p-8 rounded-[32px] border-2 border-slate-200 opacity-70">
+                    <div className="flex items-center gap-2 mb-6 text-slate-400">
+                      <History className="w-5 h-5" />
+                      <h4 className="text-sm font-black uppercase tracking-widest">Previously Submitted Work</h4>
+                    </div>
+                    <div className="space-y-4">
+                      <p className="text-slate-600 font-medium bg-slate-50 p-6 rounded-2xl border italic">{selectedProject.admin_response}</p>
+                      <AttachmentGrid paths={selectedProject.admin_attachments} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Client Assets and Info */}
                 <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm">
                   <div className="flex items-center gap-2 mb-6 text-blue-600">
                     <FileText className="w-5 h-5" />
-                    <h4 className="text-sm font-black uppercase tracking-widest">Full Requirements</h4>
+                    <h4 className="text-sm font-black uppercase tracking-widest">Initial Client Brief</h4>
                   </div>
                   <p className="text-slate-700 font-bold leading-relaxed mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-100 whitespace-pre-wrap">{selectedProject.description}</p>
                   <AttachmentGrid paths={selectedProject.attachments} />
@@ -297,19 +254,19 @@ const AdminOverview: React.FC = () => {
             <div className="w-full md:w-[450px] p-10 bg-white flex flex-col space-y-8 relative overflow-y-auto">
               <div className="flex justify-between items-center sticky top-0 bg-white z-10 pb-4 border-b">
                 <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                  <Sparkles className="text-indigo-600" /> Upload Solution
+                  <Sparkles className="text-indigo-600" /> Deliver Solution
                 </h3>
                 <button onClick={() => setSelectedProject(null)} className="p-2 hover:bg-slate-100 rounded-full"><X className="w-6 h-6" /></button>
               </div>
 
               <div className="space-y-6 flex-1">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Final Response / Explanation</label>
-                  <textarea className="w-full p-5 bg-slate-50 border border-slate-200 rounded-[24px] outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-700" rows={8} placeholder="Enter description for the work provided..." value={adminResponse} onChange={(e) => setAdminResponse(e.target.value)} />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Expert Final Response</label>
+                  <textarea className="w-full p-5 bg-slate-50 border border-slate-200 rounded-[24px] outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-700" rows={8} placeholder="Write the rework notes or final delivery notes here..." value={adminResponse} onChange={(e) => setAdminResponse(e.target.value)} />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">New Solution Assets</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Solution Assets (New/Additional)</label>
                   <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-200 rounded-[24px] cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all">
                     <Upload className="w-8 h-8 text-slate-400 mb-1" />
                     <p className="text-xs text-slate-500 font-bold">New Deliverables</p>
@@ -323,7 +280,7 @@ const AdminOverview: React.FC = () => {
                 </div>
 
                 <div className="bg-indigo-50 p-6 rounded-[24px] border border-indigo-100">
-                  <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2 ml-2">Final Bill Amount ($)</label>
+                  <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2 ml-2">Adjust Final Fee ($)</label>
                   <div className="relative">
                     <DollarSign className="absolute left-4 top-3.5 w-6 h-6 text-indigo-300" />
                     <input type="number" className="w-full pl-12 pr-4 py-4 bg-white border border-indigo-100 rounded-[18px] font-black text-xl outline-none" value={billAmount} onChange={(e) => setBillAmount(e.target.value)} />
@@ -332,7 +289,7 @@ const AdminOverview: React.FC = () => {
               </div>
 
               <button onClick={handleSubmitSolution} disabled={uploading} className="w-full bg-slate-900 text-white py-5 rounded-[24px] font-black text-lg shadow-2xl hover:bg-indigo-600 active:scale-95 transition-all flex items-center justify-center gap-3">
-                {uploading ? <Loader2 className="animate-spin" /> : <><CheckCircle className="w-6 h-6" /> SUBMIT TO CLIENT</>}
+                {uploading ? <Loader2 className="animate-spin" /> : <><CheckCircle className="w-6 h-6" /> SUBMIT WORK</>}
               </button>
             </div>
           </div>
